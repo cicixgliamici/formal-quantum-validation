@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "formal-quantum-validation"
+version = "0.1.0"
+description = "MVP 0: multi-level validation of Bell-state preparation"
+requires-python = ">=3.11"
+
+dependencies = [
+    "numpy>=1.26",
+    "qiskit>=2.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0"
+]
+
+[project.scripts]
+fqv-bell = "fqv.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
