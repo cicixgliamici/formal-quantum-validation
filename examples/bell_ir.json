@@ -1,0 +1,22 @@
+{
+  "name": "bell_phi_plus",
+  "operations": [
+    {
+      "gate": "H",
+      "targets": [
+        0
+      ]
+    },
+    {
+      "controls": [
+        0
+      ],
+      "gate": "CNOT",
+      "targets": [
+        1
+      ]
+    }
+  ],
+  "qubits": 2,
+  "schema_version": "0.1"
+}

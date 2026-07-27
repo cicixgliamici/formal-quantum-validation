@@ -1,0 +1,43 @@
+{
+  "fidelity_threshold": 0.999999999999,
+  "initial_state": [
+    "one",
+    "zero",
+    "zero",
+    "zero"
+  ],
+  "name": "Bell state preparation",
+  "probabilities": [
+    {
+      "expected": 0.5,
+      "outcome": "00"
+    },
+    {
+      "expected": 0.0,
+      "outcome": "01"
+    },
+    {
+      "expected": 0.0,
+      "outcome": "10"
+    },
+    {
+      "expected": 0.5,
+      "outcome": "11"
+    }
+  ],
+  "qubits": 2,
+  "resources": {
+    "allow_extra_gates": false,
+    "gate_counts": {
+      "cx": 1,
+      "h": 1
+    }
+  },
+  "schema_version": "0.1",
+  "target_state": [
+    "inv_sqrt_two",
+    "zero",
+    "zero",
+    "inv_sqrt_two"
+  ]
+}

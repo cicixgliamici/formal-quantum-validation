@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://formal-quantum-validation.local/schemas/quantum-contract-0.1.json",
+  "title": "Formal Quantum Validation Contract",
+  "description": "Shared executable and Lean-targeted contract format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "qubits",
+    "initial_state",
+    "target_state",
+    "fidelity_threshold",
+    "resources",
+    "probabilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "qubits": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "initial_state": {
+      "$ref": "#/$defs/state"
+    },
+    "target_state": {
+      "$ref": "#/$defs/state"
+    },
+    "fidelity_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "resources": {
+      "$ref": "#/$defs/resources"
+    },
+    "probabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/probability"
+      }
+    }
+  },
+  "$defs": {
+    "amplitude": {
+      "enum": [
+        "zero",
+        "one",
+        "minus_one",
+        "i",
+        "minus_i",
+        "inv_sqrt_two",
+        "minus_inv_sqrt_two"
+      ]
+    },
+    "state": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/amplitude"
+      },
+      "minItems": 2
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate_counts",
+        "allow_extra_gates"
+      ],
+      "properties": {
+        "gate_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "allow_extra_gates": {
+          "type": "boolean"
+        }
+      }
+    },
+    "probability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "expected"
+      ],
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "pattern": "^[01]+$"
+        },
+        "expected": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "exact_tolerance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sampled_tolerance": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

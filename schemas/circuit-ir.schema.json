@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://formal-quantum-validation.local/schemas/circuit-ir-0.1.json",
+  "title": "Formal Quantum Validation Circuit IR",
+  "description": "Restricted unitary circuit representation shared by Qiskit and Lean.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "qubits",
+    "operations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "qubits": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operation"
+      }
+    }
+  },
+  "$defs": {
+    "qubitIndex": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "singleQubitOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "targets"
+      ],
+      "properties": {
+        "gate": {
+          "enum": [
+            "I",
+            "X",
+            "Z",
+            "H"
+          ]
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/qubitIndex"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      }
+    },
+    "cnotOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "controls",
+        "targets"
+      ],
+      "properties": {
+        "gate": {
+          "const": "CNOT"
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/qubitIndex"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/qubitIndex"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      }
+    },
+    "swapOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "targets"
+      ],
+      "properties": {
+        "gate": {
+          "const": "SWAP"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/qubitIndex"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "operation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/singleQubitOperation"
+        },
+        {
+          "$ref": "#/$defs/cnotOperation"
+        },
+        {
+          "$ref": "#/$defs/swapOperation"
+        }
+      ]
+    }
+  }
+}

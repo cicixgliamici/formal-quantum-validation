@@ -97,7 +97,14 @@ def _check_target_state(
 ) -> Statevector:
     """Verify the exact ideal output state."""
 
-    actual_state = Statevector.from_instruction(circuit)
+    # Evolving the contract input makes the precondition executable instead
+    # of silently assuming Qiskit's default all-zero state.
+    actual_state = Statevector(
+        np.asarray(
+            contract.initial_state,
+            dtype=complex,
+        )
+    ).evolve(circuit)
 
     target_state = Statevector(
         np.asarray(

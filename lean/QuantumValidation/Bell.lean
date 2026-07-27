@@ -1,46 +1,37 @@
-/-
-MVP 0 proof-obligation skeleton.
+import QuantumValidation.Circuit
+import Mathlib.Tactic.FinCases
 
-This file states the theorem that the future formal
-semantics must prove.
+/-!
+Machine-checked correctness of Bell-state preparation.
 
-The opaque declarations and `sorry` explicitly mark
-the current trust gap.
+This theorem closes the original MVP trust gap: the circuit, state and
+denotation are now concrete, and the proof contains no `sorry`.
 -/
 
 namespace QuantumValidation
 
+/-- The Qiskit circuit `h(0); cx(0, 1)` represented as formal data. -/
+def bellCircuit : Circuit2 :=
+  [.h 0, .cnot 0 1]
 
-opaque State : Type
+/-- The all-zero input state in Qiskit's little-endian basis order. -/
+def ket00 : State2 :=
+  ![1, 0, 0, 0]
 
-opaque Circuit : Type
-
-
-opaque denote :
-  Circuit → State → State
-
-
-opaque bell :
-  Circuit
-
-
-opaque ket00 :
-  State
-
-
-opaque phiPlus :
-  State
-
+/-- The expected Bell state `( |00⟩ + |11⟩ ) / √2`. -/
+noncomputable def phiPlus : State2 :=
+  ![invSqrtTwo, 0, 0, invSqrtTwo]
 
 /--
-The central MVP 0 proof obligation:
+The Bell circuit maps the all-zero input to `|Φ+⟩`.
 
-the formal denotation of the Bell circuit maps
-|00⟩ to |Φ+⟩.
+The proof unfolds the general circuit and gate semantics, then checks all four
+amplitudes. No Bell-specific semantic axiom is used.
 -/
 theorem bell_correct :
-    denote bell ket00 = phiPlus := by
-  sorry
-
+    denote bellCircuit ket00 = phiPlus := by
+  funext index
+  fin_cases index <;>
+    simp [denote, bellCircuit, ket00, phiPlus, Gate2.apply]
 
 end QuantumValidation

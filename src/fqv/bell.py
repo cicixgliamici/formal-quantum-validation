@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from math import sqrt
+from importlib.resources import as_file, files
 
 from qiskit import QuantumCircuit
 
-from fqv.contracts import ProbabilityExpectation, QuantumContract
+from fqv.contracts import QuantumContract, load_contract
 
 
 def build_bell_circuit() -> QuantumCircuit:
@@ -34,49 +34,10 @@ def build_bell_minus_circuit() -> QuantumCircuit:
 
 
 def bell_contract() -> QuantumContract:
-    """Return the contract for Bell-state preparation."""
+    """Load the canonical shared Bell contract distributed with the package."""
 
-    amplitude = 1.0 / sqrt(2.0)
-
-    return QuantumContract(
-        name="Bell-state preparation",
-
-        num_qubits=2,
-
-        gate_counts={
-            "h": 1,
-            "cx": 1,
-        },
-
-        allow_extra_gates=False,
-
-        # Qiskit ordering:
-        # |00>, |01>, |10>, |11>
-        target_state=(
-            amplitude,
-            0.0,
-            0.0,
-            amplitude,
-        ),
-
-        fidelity_threshold=1.0 - 1e-12,
-
-        probabilities=(
-            ProbabilityExpectation(
-                outcome="00",
-                expected=0.5,
-            ),
-            ProbabilityExpectation(
-                outcome="01",
-                expected=0.0,
-            ),
-            ProbabilityExpectation(
-                outcome="10",
-                expected=0.0,
-            ),
-            ProbabilityExpectation(
-                outcome="11",
-                expected=0.5,
-            ),
-        ),
+    resource = files("fqv.data").joinpath(
+        "bell.contract.json"
     )
+    with as_file(resource) as contract_path:
+        return load_contract(contract_path)

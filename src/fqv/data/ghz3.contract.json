@@ -1,0 +1,43 @@
+{
+  "fidelity_threshold": 0.999999999999,
+  "initial_state": [
+    "one",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero"
+  ],
+  "name": "GHZ three qubit preparation",
+  "probabilities": [
+    {
+      "expected": 0.5,
+      "outcome": "000"
+    },
+    {
+      "expected": 0.5,
+      "outcome": "111"
+    }
+  ],
+  "qubits": 3,
+  "resources": {
+    "allow_extra_gates": false,
+    "gate_counts": {
+      "cx": 2,
+      "h": 1
+    }
+  },
+  "schema_version": "0.1",
+  "target_state": [
+    "inv_sqrt_two",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "inv_sqrt_two"
+  ]
+}
