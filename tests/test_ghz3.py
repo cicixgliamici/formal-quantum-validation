@@ -1,7 +1,15 @@
 from __future__ import annotations
 
+import numpy as np
+import pytest
+from qiskit.quantum_info import Statevector
+
 from fqv.checks import verify_contract
-from fqv.ghz import build_ghz3_circuit, ghz3_contract
+from fqv.ghz import (
+    build_ghz_circuit,
+    build_ghz3_circuit,
+    ghz3_contract,
+)
 from fqv.ir import circuit_to_ir
 from fqv.transpilation import (
     TranspilationConfig,
@@ -60,3 +68,19 @@ def test_ghz3_transpilation_preserves_operator() -> None:
     )
 
     assert report.passed, report.render_text()
+
+
+@pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
+def test_parametric_ghz_family(num_qubits: int) -> None:
+    circuit = build_ghz_circuit(num_qubits)
+    state = Statevector.from_instruction(circuit)
+    expected = np.zeros(2 ** num_qubits, dtype=complex)
+    expected[0] = 1.0 / np.sqrt(2.0)
+    expected[-1] = 1.0 / np.sqrt(2.0)
+
+    assert np.allclose(state.data, expected)
+
+
+def test_parametric_ghz_rejects_empty_register() -> None:
+    with pytest.raises(ValueError, match="at least one qubit"):
+        build_ghz_circuit(0)

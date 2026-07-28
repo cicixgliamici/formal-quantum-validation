@@ -63,17 +63,34 @@ The circuit, input, target, and theorem are generated from
 `examples/ghz3_ir.json` and `src/fqv/data/ghz3.contract.json`. Lean checks the
 resulting theorem without `sorry`.
 
+## Parametric GHZ family
+
+The formal development also defines `ghzCircuit n` for every `n > 0`. It uses
+`H(0)` followed by a fan-out of CNOT gates from qubit zero to every remaining
+qubit. Lean proves one parametric theorem:
+
+```text
+|0...0> -> (|0...0> + |1...1>) / sqrt(2)
+```
+
+The proof is inductive in the number of fan-out gates. It does not enumerate
+the `2^n` basis assignments. Qiskit contains the matching parametric circuit
+constructor, while the original GHZ(3) CNOT chain remains an independent
+fixed-size regression.
+
 ## Remaining proof work
 
 The representation is general in `n`, but generated example proofs currently
 enumerate every basis assignment. This is appropriate for Bell and GHZ(3),
-while proofs for circuit families such as GHZ(n) need algebraic lemmas and
-induction.
+while new generated circuit families still need dedicated algebraic invariants
+and induction.
 
 Identity preservation and involutivity of `X`, `Z`, and valid `CNOT` gates are
-proved for every register size and state. These reusable laws are the first
-algebraic layer above the raw semantics.
+proved for every register size and state. In addition, every supported gate
+preserves the finite complex inner product. This includes Hadamard and SWAP,
+not only the basis-permutation gates.
 
-Full unitarity and normalization preservation are not yet proved generically.
-Those theorems, including Hadamard and SWAP laws, are the next formal
-strengthening of this model.
+The formal squared norm is the real part of the self-inner-product. Lean proves
+that every supported gate and every supported circuit preserves this norm.
+Consequently, a circuit maps every normalized input state to a normalized
+output state.
