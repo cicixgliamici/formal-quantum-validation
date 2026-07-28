@@ -55,7 +55,9 @@ lake build
 Check deterministic transpilation and complete operator equivalence:
 
 ```powershell
-fqv-bell `
+fqv-verify `
+  --ir examples/bell_ir.json `
+  --contract src/fqv/data/bell.contract.json `
   --transpile `
   --optimization-level 2 `
   --seed-transpiler 11 `
@@ -63,18 +65,19 @@ fqv-bell `
 ```
 
 `lakefile.toml` pins mathlib to the release matching Lean. Update Lean and
-mathlib together; using mismatched releases is unsupported.
-
-The current Bell theorem contains an explicit `sorry`. Milestone 1 only makes
-the formal project reproducible; removing this trust gap belongs to the next
-milestone.
+mathlib together; using mismatched releases is unsupported. The formal
+development contains no project `sorry`, `axiom`, or `opaque` declaration.
 
 ## Running the prototype
 
 After installing the Python project:
 
 ```powershell
-fqv-bell --ir-output build/bell_ir.json --json-report build/bell_report.json
+fqv-verify `
+  --ir examples/bell_ir.json `
+  --contract src/fqv/data/bell.contract.json `
+  --ir-output build/bell_ir.json `
+  --json-report build/bell_report.json
 ```
 
 Generated verification artifacts belong in `build/` and are not committed.
@@ -99,3 +102,10 @@ lake build
 
 Local planning is maintained in `ROADMAP.local.md`. The file is intentionally
 excluded from Git so that exploratory notes do not become project evidence.
+
+## Python architecture
+
+New code should follow the dependency boundaries documented in
+`docs/ARCHITECTURE.md`. In particular, domain and checked IR modules remain
+independent from Qiskit. Top-level modules retained from the MVP are
+compatibility wrappers and should not receive new business logic.

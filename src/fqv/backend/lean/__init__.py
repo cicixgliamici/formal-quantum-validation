@@ -1,4 +1,4 @@
-"""Compatibility wrapper for the Lean backend."""
+"""Lean proof-obligation backend."""
 
 from fqv.backend.lean.generator import (
     GeneratedLeanModule,

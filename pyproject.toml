@@ -21,6 +21,7 @@ dev = [
 ]
 
 [project.scripts]
+fqv-verify = "fqv.cli:main"
 fqv-bell = "fqv.cli:main"
 fqv-generate-lean = "fqv.generate_cli:main"
 

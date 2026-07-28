@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from qiskit import QuantumCircuit
 
-from fqv.bell import build_bell_circuit
-from fqv.transpilation import (
+from fqv.frontend.qiskit.circuits import build_bell_circuit
+from fqv.pipeline.transpilation import (
     TranspilationConfig,
     check_operator_equivalence,
     transpile_and_check,

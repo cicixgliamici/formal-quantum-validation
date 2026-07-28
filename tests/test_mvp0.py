@@ -3,13 +3,13 @@ from __future__ import annotations
 import numpy as np
 from qiskit.quantum_info import Statevector
 
-from fqv.bell import (
+from fqv.frontend.qiskit.circuits import (
     bell_contract,
     build_bell_circuit,
     build_bell_minus_circuit,
 )
-from fqv.checks import verify_contract
-from fqv.ir import circuit_to_ir
+from fqv.frontend.qiskit.extraction import circuit_to_ir
+from fqv.frontend.qiskit.verification import verify_contract
 
 
 def test_bell_contract_passes() -> None:

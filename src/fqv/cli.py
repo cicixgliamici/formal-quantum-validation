@@ -1,123 +1,111 @@
+"""Circuit-agnostic command-line verification pipeline."""
+
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
-from fqv.bell import (
-    bell_contract,
-    build_bell_circuit,
-)
-from fqv.checks import verify_contract
-from fqv.ir import export_ir
-from fqv.transpilation import (
+from fqv.domain.contract_parser import load_contract
+from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
+from fqv.frontend.qiskit.extraction import export_ir
+from fqv.frontend.qiskit.verification import verify_contract
+from fqv.ir.raw import load_raw_ir
+from fqv.ir.validation import check_ir
+from fqv.pipeline.transpilation import (
     TranspilationConfig,
     transpile_and_check,
 )
+from fqv.pipeline.verify import verify
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build options shared by every supported circuit contract."""
+
     parser = argparse.ArgumentParser(
-        description=(
-            "Verify the Bell-state MVP 0 contract."
-        )
+        description="Verify a checked circuit IR against a contract."
     )
-
     parser.add_argument(
-        "--shots",
-        type=int,
-        default=4096,
-        help=(
-            "number of sampled computational-basis "
-            "measurements"
-        ),
+        "--ir",
+        type=Path,
+        default=Path("examples/bell_ir.json"),
+        help="source circuit IR",
     )
-
     parser.add_argument(
-        "--seed",
-        type=int,
-        default=7,
-        help="random seed used for sampling",
+        "--contract",
+        type=Path,
+        default=Path("src/fqv/data/bell.contract.json"),
+        help="executable quantum contract",
     )
-
+    parser.add_argument("--shots", type=int, default=4096)
+    parser.add_argument("--seed", type=int, default=7)
     parser.add_argument(
         "--ir-output",
         type=Path,
-        default=Path("build/bell_ir.json"),
-        help="destination for the circuit IR",
-    )
-
-    parser.add_argument(
-        "--json-report",
-        type=Path,
         default=None,
-        help=(
-            "optional destination for the "
-            "verification report"
-        ),
+        help="optional normalized IR output",
     )
-
-    parser.add_argument(
-        "--transpile",
-        action="store_true",
-        help=(
-            "transpile deterministically and check complete "
-            "operator equivalence"
-        ),
-    )
-
+    parser.add_argument("--json-report", type=Path, default=None)
+    parser.add_argument("--transpile", action="store_true")
     parser.add_argument(
         "--optimization-level",
         type=int,
         choices=range(4),
         default=1,
-        help="Qiskit transpiler optimization level",
     )
-
-    parser.add_argument(
-        "--seed-transpiler",
-        type=int,
-        default=7,
-        help="seed used by stochastic transpiler passes",
-    )
-
+    parser.add_argument("--seed-transpiler", type=int, default=7)
     parser.add_argument(
         "--transpiled-ir-output",
         type=Path,
-        default=Path("build/bell_transpiled_ir.json"),
-        help="destination for the transpiled circuit IR",
+        default=Path("build/transpiled_ir.json"),
     )
-
-    parser.add_argument(
-        "--equivalence-report",
-        type=Path,
-        default=None,
-        help="optional destination for transpilation evidence",
-    )
-
+    parser.add_argument("--equivalence-report", type=Path, default=None)
     return parser
 
 
+def _write_report(path: Path, report: object) -> None:
+    """Write one report exposing the stable `to_json` protocol.
+
+    Keeping report I/O here prevents domain report classes from acquiring file
+    system responsibilities.
+    """
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    to_json = getattr(report, "to_json")
+    path.write_text(to_json() + "\n", encoding="utf-8")
+
+
 def main() -> int:
+    """Run verification for the IR and contract selected by the user.
+
+    The command follows the architectural boundaries explicitly: load raw
+    documents, validate into checked/domain objects, construct the selected
+    frontend circuit, then invoke pipeline stages.
+    """
+
     args = build_parser().parse_args()
-
-    circuit = build_bell_circuit()
-    contract = bell_contract()
-
-    report = verify_contract(
+    # Raw JSON has no trusted meaning until `check_ir` returns successfully.
+    checked_ir = check_ir(load_raw_ir(args.ir))
+    circuit = checked_ir_to_qiskit(checked_ir)
+    contract = load_contract(args.contract)
+    # Detect the cross-document mismatch before Qiskit reports a lower-level
+    # statevector dimension error.
+    if checked_ir.num_qubits != contract.num_qubits:
+        raise ValueError(
+            f"circuit has {checked_ir.num_qubits} qubits but contract "
+            f"requires {contract.num_qubits}"
+        )
+    report = verify(
         circuit,
         contract,
+        verifier=verify_contract,
         shots=args.shots,
         seed=args.seed,
     )
 
-    ir_path = export_ir(
-        circuit,
-        args.ir_output,
-    )
-
     print(report.render_text())
-    print()
-    print(f"IR written to: {ir_path}")
+    if args.ir_output is not None:
+        normalized_path = export_ir(circuit, args.ir_output)
+        print(f"\nIR written to: {normalized_path}")
 
     equivalence_passed = True
     if args.transpile:
@@ -128,47 +116,17 @@ def main() -> int:
                 seed_transpiler=args.seed_transpiler,
             ),
         )
-        transpiled_ir_path = export_ir(
+        transpiled_path = export_ir(
             transpiled,
             args.transpiled_ir_output,
         )
         equivalence_passed = equivalence.passed
-
-        print()
-        print(equivalence.render_text())
-        print(
-            f"Transpiled IR written to: "
-            f"{transpiled_ir_path}"
-        )
-
+        print(f"\n{equivalence.render_text()}")
+        print(f"Transpiled IR written to: {transpiled_path}")
         if args.equivalence_report is not None:
-            args.equivalence_report.parent.mkdir(
-                parents=True,
-                exist_ok=True,
-            )
-            args.equivalence_report.write_text(
-                equivalence.to_json() + "\n",
-                encoding="utf-8",
-            )
-            print(
-                f"Equivalence report written to: "
-                f"{args.equivalence_report}"
-            )
+            _write_report(args.equivalence_report, equivalence)
 
     if args.json_report is not None:
-        args.json_report.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        args.json_report.write_text(
-            report.to_json() + "\n",
-            encoding="utf-8",
-        )
-
-        print(
-            f"JSON report written to: "
-            f"{args.json_report}"
-        )
+        _write_report(args.json_report, report)
 
     return 0 if report.passed and equivalence_passed else 1

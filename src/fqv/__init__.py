@@ -11,38 +11,50 @@ from typing import Any
 
 
 _PUBLIC_OBJECTS: dict[str, tuple[str, str]] = {
-    "CheckResult": ("fqv.results", "CheckResult"),
+    "CheckResult": ("fqv.domain.reports", "CheckResult"),
     "VerificationReport": (
-        "fqv.results",
+        "fqv.domain.reports",
         "VerificationReport",
     ),
-    "bell_contract": ("fqv.bell", "bell_contract"),
+    "bell_contract": (
+        "fqv.frontend.qiskit.circuits",
+        "bell_contract",
+    ),
     "build_bell_circuit": (
-        "fqv.bell",
+        "fqv.frontend.qiskit.circuits",
         "build_bell_circuit",
     ),
     "build_bell_minus_circuit": (
-        "fqv.bell",
+        "fqv.frontend.qiskit.circuits",
         "build_bell_minus_circuit",
     ),
     "build_ghz3_circuit": (
-        "fqv.ghz",
+        "fqv.frontend.qiskit.circuits",
         "build_ghz3_circuit",
     ),
-    "circuit_to_ir": ("fqv.ir", "circuit_to_ir"),
-    "export_ir": ("fqv.ir", "export_ir"),
-    "ghz3_contract": ("fqv.ghz", "ghz3_contract"),
-    "verify_contract": ("fqv.checks", "verify_contract"),
+    "circuit_to_ir": (
+        "fqv.frontend.qiskit.extraction",
+        "circuit_to_ir",
+    ),
+    "export_ir": ("fqv.frontend.qiskit.extraction", "export_ir"),
+    "ghz3_contract": (
+        "fqv.frontend.qiskit.circuits",
+        "ghz3_contract",
+    ),
+    "verify_contract": (
+        "fqv.frontend.qiskit.verification",
+        "verify_contract",
+    ),
     "TranspilationConfig": (
-        "fqv.transpilation",
+        "fqv.pipeline.transpilation",
         "TranspilationConfig",
     ),
     "check_operator_equivalence": (
-        "fqv.transpilation",
+        "fqv.pipeline.transpilation",
         "check_operator_equivalence",
     ),
     "transpile_and_check": (
-        "fqv.transpilation",
+        "fqv.pipeline.transpilation",
         "transpile_and_check",
     ),
 }

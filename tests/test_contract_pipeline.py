@@ -5,12 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from fqv.contracts import (
-    InvalidContractError,
-    contract_from_dict,
-)
-from fqv.ir_validation import InvalidIrError, validate_ir
-from fqv.lean_generator import generate_lean_module
+from fqv.backend.lean.generator import generate_lean_module
+from fqv.domain.contract_parser import contract_from_dict
+from fqv.domain.contract_validation import InvalidContractError
+from fqv.ir.validation import InvalidIrError, check_ir
 
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -84,7 +82,7 @@ def test_ir_rejects_equal_cnot_operands() -> None:
         InvalidIrError,
         match="same CNOT control and target",
     ):
-        validate_ir(ir)
+        check_ir(ir)
 
 
 def test_generator_rejects_dimension_mismatch() -> None:

@@ -1,17 +1,15 @@
-"""Compatibility wrapper for the transpilation pipeline stage."""
+"""Composable verification pipeline stages."""
 
 from fqv.pipeline.transpilation import (
-    DEFAULT_BASIS_GATES,
-    EquivalenceReport,
     TranspilationConfig,
     check_operator_equivalence,
     transpile_and_check,
 )
+from fqv.pipeline.verify import verify
 
 __all__ = [
-    "DEFAULT_BASIS_GATES",
-    "EquivalenceReport",
     "TranspilationConfig",
     "check_operator_equivalence",
     "transpile_and_check",
+    "verify",
 ]

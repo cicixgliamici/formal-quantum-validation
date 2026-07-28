@@ -4,14 +4,14 @@ import numpy as np
 import pytest
 from qiskit.quantum_info import Statevector
 
-from fqv.checks import verify_contract
-from fqv.ghz import (
+from fqv.frontend.qiskit.circuits import (
     build_ghz_circuit,
     build_ghz3_circuit,
     ghz3_contract,
 )
-from fqv.ir import circuit_to_ir
-from fqv.transpilation import (
+from fqv.frontend.qiskit.extraction import circuit_to_ir
+from fqv.frontend.qiskit.verification import verify_contract
+from fqv.pipeline.transpilation import (
     TranspilationConfig,
     transpile_and_check,
 )

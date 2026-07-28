@@ -5,8 +5,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fqv.ir_validation import load_ir
-from fqv.lean_generator import write_lean_module
+from fqv.backend.lean.generator import write_lean_module
+from fqv.ir.raw import load_raw_ir
+from fqv.ir.validation import check_ir
 
 
 def _load_json_object(path: Path) -> dict[str, Any]:
@@ -20,6 +21,8 @@ def _load_json_object(path: Path) -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Describe the three explicit artifacts used by Lean generation."""
+
     parser = argparse.ArgumentParser(
         description=(
             "Generate a Lean proof obligation from circuit IR "
@@ -33,8 +36,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    """Validate input documents and write one deterministic Lean module."""
+
     args = build_parser().parse_args()
-    ir = load_ir(args.ir)
+    ir = load_raw_ir(args.ir)
+    check_ir(ir)
     contract_data = _load_json_object(args.contract)
     output = write_lean_module(
         ir,
