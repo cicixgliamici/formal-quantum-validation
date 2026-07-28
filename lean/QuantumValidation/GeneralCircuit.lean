@@ -65,38 +65,63 @@ inductive Gate (n : Nat) where
     )
 
 /--
-Apply a gate to amplitudes.
+Apply one gate to a quantum state.
 
-Permutation gates read the amplitude at the inverse basis permutation. `X`,
-`CNOT`, and `SWAP` are self-inverse, which keeps their definitions compact.
+A state is a function from computational-basis assignments to amplitudes.
+For permutation gates, the output amplitude of `basis` is obtained by reading
+the input amplitude from the basis state mapped to `basis` by the inverse gate.
+
+Since `X`, `CNOT`, and `SWAP` are self-inverse, their inverse action is the
+same as their forward action.
 -/
 noncomputable def Gate.apply {n : Nat} :
     Gate n → State n → State n
-  | .identity _, state => state
+
+  -- Identity leaves every amplitude unchanged.
+  | .identity _, state =>
+      state
+
+  -- X exchanges the amplitudes of basis states that differ at `target`.
   | .x target, state =>
-      fun basis => state (flipBit basis target)
+      fun basis =>
+        state (flipBit basis target)
+
+  -- Z adds a phase of -1 when the target qubit is 1.
   | .z target, state =>
       fun basis =>
         if basis target then
           -state basis
         else
           state basis
+
+  -- Hadamard combines the amplitudes associated with target values 0 and 1.
   | .h target, state =>
       fun basis =>
         let zeroAmplitude :=
           state (setBit basis target false)
         let oneAmplitude :=
           state (setBit basis target true)
+
         if basis target then
           (zeroAmplitude - oneAmplitude) * invSqrtTwo
         else
           (zeroAmplitude + oneAmplitude) * invSqrtTwo
+
+  -- CNOT flips the target exactly when the control bit is 1.
+  --
+  -- To compute the output amplitude of `basis`, read the input amplitude
+  -- from the basis state obtained by applying the inverse CNOT.
   | .cnot control target _, state =>
       fun basis =>
         if basis control then
           state (flipBit basis target)
         else
           state basis
+
+  -- SWAP exchanges the values stored at `left` and `right`.
+  --
+  -- The nested `setBit` calls construct the basis assignment obtained
+  -- by replacing the left bit with the original right bit and vice versa.
   | .swap left right _, state =>
       fun basis =>
         state (
