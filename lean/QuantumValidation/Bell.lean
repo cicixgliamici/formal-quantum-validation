@@ -3,9 +3,6 @@ import Mathlib.Tactic.FinCases
 
 /-!
 Machine-checked correctness of Bell-state preparation.
-
-This theorem closes the original MVP trust gap: the circuit, state and
-denotation are now concrete, and the proof contains no `sorry`.
 -/
 
 namespace QuantumValidation

@@ -3,7 +3,7 @@
 .codex/
 
 # Local planning and machine-specific configuration.
-ROADMAP.local.md
+docs_local
 .env
 .env.*
 !.env.example
