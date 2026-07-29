@@ -1,4 +1,10 @@
-"""Contract verification pipeline orchestration."""
+"""Provider-neutral hand-off between a caller and executable verification.
+
+``fqv.cli`` calls :func:`verify` with a concrete verifier. The function then
+calls that injected frontend (currently
+``frontend.qiskit.verification.verify_contract``), which calls the individual
+checks and returns a domain report through this module to the CLI.
+"""
 
 from __future__ import annotations
 

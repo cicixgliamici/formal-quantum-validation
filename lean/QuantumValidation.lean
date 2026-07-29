@@ -5,6 +5,7 @@ import QuantumValidation.GeneralUnitarity
 import QuantumValidation.ParametricGhz
 import QuantumValidation.GeneratedBell
 import QuantumValidation.GeneratedGhz3
+import QuantumValidation.RegressionTests
 
 /-!
 This root module gives Lake and CI one stable build target.

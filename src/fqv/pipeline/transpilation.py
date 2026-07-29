@@ -1,3 +1,10 @@
+"""Transpile a Qiskit circuit and verify preservation of its full operator.
+
+The verification CLI calls this optional pipeline after contract checks. It
+calls Qiskit transpilation, compares source and result as operators, and
+returns both objects to the CLI; the CLI then calls the Qiskit IR exporter.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

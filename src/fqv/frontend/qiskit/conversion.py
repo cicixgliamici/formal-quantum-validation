@@ -1,4 +1,10 @@
-"""Build Qiskit circuits from checked core IR."""
+"""Build Qiskit circuits from checked core IR.
+
+The verification CLI calls this adapter after ``ir.validation``. Its result
+continues either to ``pipeline.verify`` or to ``pipeline.transpilation``.
+Keeping both directions outside the core IR prevents Qiskit from becoming a
+dependency of validation and Lean generation.
+"""
 
 from __future__ import annotations
 

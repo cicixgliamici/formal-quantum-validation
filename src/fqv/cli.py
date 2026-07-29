@@ -1,4 +1,13 @@
-"""Circuit-agnostic command-line verification pipeline."""
+"""Command-line entry point for executable verification.
+
+Call flow:
+    ``python -m fqv`` -> ``fqv.__main__`` -> this module -> IR and contract
+    parsers -> Qiskit conversion -> ``pipeline.verify`` -> Qiskit checks.
+
+If requested, this module then calls the transpilation pipeline and sends both
+the original and transpiled circuits to the IR exporter. Reports return here
+for terminal rendering or JSON output, so lower layers never own CLI policy.
+"""
 
 from __future__ import annotations
 
@@ -83,6 +92,8 @@ def main() -> int:
     """
 
     args = build_parser().parse_args()
+    # Input path: raw.py reads JSON, validation.py creates trusted core IR,
+    # and conversion.py is the first layer allowed to construct Qiskit data.
     # Raw JSON has no trusted meaning until `check_ir` returns successfully.
     checked_ir = check_ir(load_raw_ir(args.ir))
     circuit = checked_ir_to_qiskit(checked_ir)
@@ -94,6 +105,8 @@ def main() -> int:
             f"circuit has {checked_ir.num_qubits} qubits but contract "
             f"requires {contract.num_qubits}"
         )
+    # Control passes through the provider-neutral pipeline boundary before
+    # verification.py dispatches the individual Qiskit scientific checks.
     report = verify(
         circuit,
         contract,
@@ -109,6 +122,8 @@ def main() -> int:
 
     equivalence_passed = True
     if args.transpile:
+        # This optional branch returns here after transpiling and comparing the
+        # complete operators; extraction.py then serializes the checked result.
         transpiled, equivalence = transpile_and_check(
             circuit,
             config=TranspilationConfig(

@@ -1,4 +1,10 @@
-"""Extract restricted circuit IR from Qiskit circuits."""
+"""Extract restricted circuit IR from Qiskit circuits.
+
+Circuit builders, the verification CLI, and the transpilation path call this
+module when a Qiskit circuit must cross back into the shared representation.
+The resulting JSON is consumed next by ``ir.validation`` or by external tools;
+unsupported Qiskit features stop here instead of leaking into core IR.
+"""
 
 from __future__ import annotations
 

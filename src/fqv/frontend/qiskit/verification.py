@@ -1,4 +1,10 @@
-"""Compose independent Qiskit checks for one domain contract."""
+"""Compose independent Qiskit checks for one domain contract.
+
+Called by ``pipeline.verify`` after the CLI has built a Qiskit circuit and a
+validated domain contract. This module calls the structure, state, exact
+probability, and sampled-probability checks in dependency order, then returns
+their shared report to the pipeline.
+"""
 
 from __future__ import annotations
 
@@ -27,6 +33,8 @@ def verify_contract(
         raise ValueError("shots must be strictly positive")
 
     report = VerificationReport(contract_name=contract.name)
+    # Structure must be checked before simulation. The state check then
+    # produces the Statevector consumed by both probability checks.
     check_structure(circuit, contract, report)
     state = check_target_state(circuit, contract, report)
     check_exact_probabilities(state, contract, report)

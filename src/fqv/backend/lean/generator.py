@@ -1,3 +1,11 @@
+"""Translate shared IR and contracts into a fixed-size Lean proof obligation.
+
+``generate_cli`` calls :func:`write_lean_module`, which calls
+:func:`generate_lean_module`; the latter validates both documents and uses the
+private formatting helpers below. The written module is consumed next by the
+Lean build, not imported back into Python.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

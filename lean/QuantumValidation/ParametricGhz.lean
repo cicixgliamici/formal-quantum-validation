@@ -7,6 +7,21 @@ The theorem covers every nonempty register. It uses a fan-out circuit with one
 Hadamard on qubit zero followed by CNOTs from qubit zero to every other qubit.
 This circuit is equivalent to the CNOT chain used by the fixed GHZ(3) example,
 but its invariant is substantially clearer for an inductive proof.
+
+Proof map:
+
+1. `prefixBasis`, `ket`, and `ghzPrefix` describe the two basis branches that
+   are present after each preparation step.
+2. `hadamard_zero_starts_ghz` establishes the invariant for the first qubit.
+3. The CNOT lemmas show how one fan-out gate acts on basis states and then on
+   their scaled superposition.
+4. `fanoutGate_advances` packages that local action as one invariant step.
+5. `ghzFanout_correct` repeats the step by induction over all target qubits.
+6. `ghz_correct` connects the initial Hadamard and the complete fan-out.
+
+The longer pointwise proofs below deliberately expose basis assignments. This
+keeps the argument close to the executable semantics in `GeneralCircuit`
+instead of hiding the important bit transformations behind automation.
 -/
 
 namespace QuantumValidation
@@ -73,8 +88,13 @@ private theorem hadamard_zero_starts_ghz {n : Nat} (nonempty : 0 < n) :
     Gate.apply (.h ⟨0, nonempty⟩) (ket (prefixBasis 0)) =
       ghzPrefix 1 := by
   classical
+  -- State equality is proved pointwise. Splitting on the first bit matches
+  -- the two branches selected by the Hadamard semantics.
   funext basis
   by_cases firstBit : basis ⟨0, nonempty⟩
+  -- If the observed basis has bit zero set, only the |10...0> branch can
+  -- contribute. The helper equivalences below make that statement usable by
+  -- `simp` despite the state being expressed with `Function.update`.
   · have basisNotZero : basis ≠ prefixBasis 0 := by
       intro equal
       have := congrFun equal ⟨0, nonempty⟩
@@ -115,6 +135,9 @@ private theorem hadamard_zero_starts_ghz {n : Nat} (nonempty : 0 < n) :
           simp [prefixBasis, Function.update, atZero, nonzero]
     simp [Gate.apply, ket, ghzPrefix, scaleState, addState, setBit,
       firstBit, basisNotZero, updatedTrueNotZero, updatedFalse]
+  -- If bit zero is clear, the symmetric argument isolates the |00...0>
+  -- branch. Keeping both cases explicit makes the amplitude accounting easy
+  -- to audit.
   · have bitValue : basis ⟨0, nonempty⟩ = false :=
       Bool.eq_false_of_not_eq_true firstBit
     have basisNotOne : basis ≠ prefixBasis 1 := by
@@ -162,6 +185,9 @@ private theorem cnot_apply_ket {n : Nat}
   classical
   funext basis
   simp only [Gate.apply, ket]
+  -- A ket is selected by equality with its basis assignment. Since CNOT is
+  -- involutive, testing the transformed input against `assignment` is the
+  -- same as testing the input against the transformed assignment.
   have equivalent :
       cnotTransform control target basis = assignment ↔
         basis = cnotTransform control target assignment := by
@@ -182,6 +208,8 @@ private theorem cnot_apply_ket {n : Nat}
           congrArg (cnotTransform control target) equal
         _ = assignment :=
           cnotTransform_involutive control target distinct assignment
+  -- The semantic definition of CNOT also splits on the control bit, so these
+  -- cases reduce respectively to a bit flip and to the identity.
   by_cases controlBit : basis control
   · simp only [controlBit, if_true]
     have condition :
@@ -232,6 +260,8 @@ private theorem cnotTransform_prefix {n count : Nat}
         (prefixBasis count) =
       prefixBasis (count + 1) := by
   funext qubit
+  -- At the target, CNOT changes false to true. Every other bit retains its
+  -- previous membership in the true prefix.
   by_cases atTarget : qubit = ⟨count, inRange⟩
   · subst qubit
     simp [cnotTransform, prefixBasis, flipBit, setBit, positive]
@@ -248,6 +278,8 @@ private theorem fanoutGate_advances {n count : Nat}
     (positive : 0 < count) (inRange : count < n) :
     Gate.apply (fanoutGate count positive inRange) (ghzPrefix count) =
       ghzPrefix (count + 1) := by
+  -- Distribute CNOT over the two GHZ branches: the zero branch is fixed,
+  -- while the true prefix gains exactly the new target.
   unfold fanoutGate
   rw [ghzPrefix, cnot_apply_superposition]
   rw [cnot_apply_ket, cnot_apply_ket]
@@ -265,6 +297,9 @@ private theorem ghzFanout_correct {n : Nat}
     (count : Nat) (inRange : count + 1 ≤ n) :
     denote (ghzFanout count inRange) (ghzPrefix 1) =
       ghzPrefix (count + 1) := by
+  -- The induction follows the recursive circuit constructor exactly. The
+  -- hypothesis handles the earlier targets; `fanoutGate_advances` handles
+  -- the single gate appended for the successor case.
   induction count with
   | zero => rfl
   | succ previous inductionHypothesis =>
@@ -282,11 +317,14 @@ to `(ket 0...0 + ket 1...1) / sqrt(2)`.
 theorem ghz_correct (n : Nat) (nonempty : 0 < n) :
     denote (ghzCircuit n nonempty) (ket (prefixBasis 0)) =
       ghzState n := by
+  -- First expose sequential execution of H followed by the CNOT fan-out.
   rw [ghzCircuit, denote_append]
   change
     denote (ghzFanout (n - 1) _)
         (Gate.apply (.h ⟨0, nonempty⟩) (ket (prefixBasis 0))) =
       ghzState n
+  -- The two main lemmas now connect directly: H establishes `ghzPrefix 1`,
+  -- and fan-out grows it until every qubit belongs to the true branch.
   rw [hadamard_zero_starts_ghz]
   rw [ghzFanout_correct]
   have fullRegister : n - 1 + 1 = n := by omega

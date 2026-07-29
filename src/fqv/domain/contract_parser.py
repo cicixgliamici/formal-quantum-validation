@@ -1,4 +1,10 @@
-"""Parse raw JSON contracts into validated domain objects."""
+"""Parse raw JSON contracts into validated domain objects.
+
+The verification CLI and packaged circuit fixtures call :func:`load_contract`.
+The Lean generator calls :func:`contract_from_dict` because it already owns
+the raw JSON. Both routes return ``QuantumContract`` to their caller; frontend
+checks consume that object next and never parse JSON themselves.
+"""
 
 from __future__ import annotations
 

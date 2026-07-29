@@ -1,3 +1,14 @@
+"""Command-line entry point for deterministic Lean source generation.
+
+Call flow:
+    ``fqv-generate-lean`` -> this module -> raw IR validation ->
+    ``backend.lean.generator`` -> generated ``.lean`` file -> Lean compiler.
+
+The compiler is intentionally a later external step. This command prepares a
+proof obligation, while Lean remains responsible for accepting or rejecting
+the generated theorem.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -39,9 +50,13 @@ def main() -> int:
     """Validate input documents and write one deterministic Lean module."""
 
     args = build_parser().parse_args()
+    # Validate the shared IR before the backend sees it. The generator parses
+    # the contract itself because its exact amplitude tokens are source data.
     ir = load_raw_ir(args.ir)
     check_ir(ir)
     contract_data = _load_json_object(args.contract)
+    # Control now moves to backend/lean/generator.py and returns only after the
+    # deterministic source file has been written.
     output = write_lean_module(
         ir,
         contract_data,

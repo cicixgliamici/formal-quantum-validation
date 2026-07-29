@@ -1,4 +1,10 @@
-"""Validate raw IR and construct its checked representation."""
+"""Validate raw IR and construct its checked representation.
+
+Both command-line entry points call this module immediately after raw JSON is
+loaded. Executable verification sends the returned ``CheckedCircuitIr`` to the
+Qiskit converter; Lean generation uses successful validation as its trust
+boundary before formatting the original exact tokens.
+"""
 
 from __future__ import annotations
 
