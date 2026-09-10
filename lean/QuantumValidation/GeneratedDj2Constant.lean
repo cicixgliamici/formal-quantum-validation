@@ -1,5 +1,4 @@
 import QuantumValidation.GeneralCircuit
-import Mathlib.Tactic.Ring
 
 /-!
 Generated from circuit IR and contract schema version 0.1.
@@ -8,15 +7,6 @@ Regenerate this module instead of editing it by hand.
 
 namespace QuantumValidation
 namespace General
-
-theorem invSqrtTwo_sq : invSqrtTwo * invSqrtTwo = (2 : ℂ)⁻¹ := by
-  have square : (Real.sqrt 2 : ℂ) * (Real.sqrt 2 : ℂ) = 2 := by
-    norm_cast
-    exact Real.mul_self_sqrt (by norm_num)
-  calc
-    _ = ((Real.sqrt 2 : ℂ) * (Real.sqrt 2 : ℂ))⁻¹ := by
-      simp only [invSqrtTwo, mul_inv_rev]
-    _ = _ := congrArg Inv.inv square
 
 /-- Gate order is copied from the validated circuit IR. -/
 def generatedDeutschJozsaTwoBitConstantCircuit : Circuit 3 :=
@@ -36,10 +26,8 @@ theorem generatedDeutschJozsaTwoBitConstantCorrect :
   classical
   -- Function extensionality reduces state equality to amplitudes.
   funext basis
-  have h2 : invSqrtTwo * invSqrtTwo = (2 : ℂ)⁻¹ := invSqrtTwo_sq
-  -- Exhaustive basis cases over all 8 assignments.
-  cases bit0 : basis 0 <;> cases bit1 : basis 1 <;> cases bit2 : basis 2
-  · -- basis = 000 (amplitude +invSqrtTwo)
+  -- Exhaustive basis cases are intended only for small fixed-size circuits.
+  cases bit0 : basis 0 <;> cases bit1 : basis 1 <;> cases bit2 : basis 2 <;>
     simp [
       denote,
       generatedDeutschJozsaTwoBitConstantCircuit,
@@ -50,33 +38,6 @@ theorem generatedDeutschJozsaTwoBitConstantCorrect :
       flipBit,
       bit0, bit1, bit2
     ]
-    have h_alg : ((invSqrtTwo * invSqrtTwo * invSqrtTwo + invSqrtTwo * invSqrtTwo * invSqrtTwo) * invSqrtTwo +
-          (invSqrtTwo * invSqrtTwo * invSqrtTwo + invSqrtTwo * invSqrtTwo * invSqrtTwo) * invSqrtTwo) *
-        invSqrtTwo = 4 * (invSqrtTwo * invSqrtTwo) * (invSqrtTwo * invSqrtTwo) * invSqrtTwo := by ring
-    rw [h_alg, h2]
-    ring
-  · -- basis = 100 (amplitude -invSqrtTwo)
-    simp [
-      denote,
-      generatedDeutschJozsaTwoBitConstantCircuit,
-      generatedDeutschJozsaTwoBitConstantInput,
-      generatedDeutschJozsaTwoBitConstantTarget,
-      Gate.apply,
-      setBit,
-      flipBit,
-      bit0, bit1, bit2
-    ]
-    have h_alg : ((-(invSqrtTwo * invSqrtTwo * invSqrtTwo) + -(invSqrtTwo * invSqrtTwo * invSqrtTwo)) * invSqrtTwo +
-          (-(invSqrtTwo * invSqrtTwo * invSqrtTwo) + -(invSqrtTwo * invSqrtTwo * invSqrtTwo)) * invSqrtTwo) *
-        invSqrtTwo = - (4 * (invSqrtTwo * invSqrtTwo) * (invSqrtTwo * invSqrtTwo) * invSqrtTwo) := by ring
-    rw [h_alg, h2]
-    ring
-  · simp [denote, generatedDeutschJozsaTwoBitConstantCircuit, generatedDeutschJozsaTwoBitConstantInput, generatedDeutschJozsaTwoBitConstantTarget, Gate.apply, setBit, flipBit, bit0, bit1, bit2]
-  · simp [denote, generatedDeutschJozsaTwoBitConstantCircuit, generatedDeutschJozsaTwoBitConstantInput, generatedDeutschJozsaTwoBitConstantTarget, Gate.apply, setBit, flipBit, bit0, bit1, bit2]
-  · simp [denote, generatedDeutschJozsaTwoBitConstantCircuit, generatedDeutschJozsaTwoBitConstantInput, generatedDeutschJozsaTwoBitConstantTarget, Gate.apply, setBit, flipBit, bit0, bit1, bit2]
-  · simp [denote, generatedDeutschJozsaTwoBitConstantCircuit, generatedDeutschJozsaTwoBitConstantInput, generatedDeutschJozsaTwoBitConstantTarget, Gate.apply, setBit, flipBit, bit0, bit1, bit2]
-  · simp [denote, generatedDeutschJozsaTwoBitConstantCircuit, generatedDeutschJozsaTwoBitConstantInput, generatedDeutschJozsaTwoBitConstantTarget, Gate.apply, setBit, flipBit, bit0, bit1, bit2]
-  · simp [denote, generatedDeutschJozsaTwoBitConstantCircuit, generatedDeutschJozsaTwoBitConstantInput, generatedDeutschJozsaTwoBitConstantTarget, Gate.apply, setBit, flipBit, bit0, bit1, bit2]
 
 end General
 end QuantumValidation

@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Data.Complex.Basic
+import Mathlib.Tactic.Ring
 
 /-!
 General finite pure-state semantics for the supported unitary circuit fragment.
@@ -31,6 +32,23 @@ abbrev State (n : Nat) := Basis n → ℂ
 /-- The exact scalar shared by Hadamard and common entangled states. -/
 noncomputable def invSqrtTwo : ℂ :=
   ((Real.sqrt 2 : ℝ) : ℂ)⁻¹
+
+/-- This exact scalar identity replaces numerical tolerance in Hadamard evaluations. -/
+@[simp] theorem invSqrtTwo_sq : invSqrtTwo * invSqrtTwo = (2 : ℂ)⁻¹ := by
+  have square : (Real.sqrt 2 : ℂ) * (Real.sqrt 2 : ℂ) = 2 := by
+    norm_cast
+    exact Real.mul_self_sqrt (by norm_num)
+  calc
+    _ = ((Real.sqrt 2 : ℂ) * (Real.sqrt 2 : ℂ))⁻¹ := by
+      simp only [invSqrtTwo, mul_inv_rev]
+    _ = _ := congrArg Inv.inv square
+
+@[simp] theorem half_add_half_mul (x : ℂ) : (2 : ℂ)⁻¹ * x + (2 : ℂ)⁻¹ * x = x := by ring
+@[simp] theorem half_add_half_mul_neg (x : ℂ) : -((2 : ℂ)⁻¹ * x) + -((2 : ℂ)⁻¹ * x) = -x := by ring
+@[simp] theorem half_sub_half_mul_neg (x : ℂ) : -((2 : ℂ)⁻¹ * x) - ((2 : ℂ)⁻¹ * x) = -x := by ring
+@[simp] theorem two_inv_add_two_inv : (2 : ℂ)⁻¹ + (2 : ℂ)⁻¹ = 1 := by ring
+@[simp] theorem neg_two_inv_add_neg_two_inv : -((2 : ℂ)⁻¹) + -((2 : ℂ)⁻¹) = -1 := by ring
+@[simp] theorem neg_two_inv_sub_two_inv : -((2 : ℂ)⁻¹) - ((2 : ℂ)⁻¹) = -1 := by ring
 
 /-- Replace one qubit value in a computational-basis assignment. -/
 def setBit {n : Nat} (

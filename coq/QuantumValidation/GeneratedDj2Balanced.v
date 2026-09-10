@@ -8,13 +8,13 @@ Regenerate this module instead of editing it by hand.
 *)
 
 Definition deutsch_jozsa_two_bit_balanced_circuit : base_ucom 3 :=
-  X 2 ;; H 0 ;; H 1 ;; H 2 ;; CNOT 0 2 ;; H 0 ;; H 1.
+  X 2 ; H 0 ; H 1 ; H 2 ; CNOT 0 2 ; H 0 ; H 1.
 
 Definition deutsch_jozsa_two_bit_balanced_input : Vector 8 :=
   ∣0, 0, 0⟩.
 
 Definition deutsch_jozsa_two_bit_balanced_target : Vector 8 :=
-  (/√2)%R .* ∣0, 0, 1⟩ .+ (- /√2)%R .* ∣1, 0, 1⟩.
+  (/√2)%R .* ∣1, 0, 0⟩ .+ (- /√2)%R .* ∣1, 0, 1⟩.
 
 Theorem deutsch_jozsa_two_bit_balanced_correct :
   uc_eval deutsch_jozsa_two_bit_balanced_circuit × deutsch_jozsa_two_bit_balanced_input = deutsch_jozsa_two_bit_balanced_target.

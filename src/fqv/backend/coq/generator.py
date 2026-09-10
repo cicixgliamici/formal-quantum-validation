@@ -48,13 +48,20 @@ def _coq_identifier(value: str) -> str:
 
 
 def _format_gate(operation: CheckedOperation) -> str:
-    """Translate one validated IR operation to SQIR base_ucom syntax."""
+    """Translate one validated IR operation to SQIR base_ucom syntax.
+
+    In SQIR:
+    - Identity on qubit q is `ID q` (single-qubit identity on qubit q, defined as
+      `uapp1 (U_R 0 0 0) q`). `skip` is not an identity constructor for base_ucom.
+    - Sequential composition uses the `;` infix operator from `ucom_scope`.
+    - SWAP is decomposed into three CNOT gates: `CNOT t0 t1 ; CNOT t1 t0 ; CNOT t0 t1`.
+    """
 
     gate = operation.gate
     targets = operation.targets
 
     if gate == "I":
-        return f"skip"
+        return f"ID {targets[0]}"
     if gate == "X":
         return f"X {targets[0]}"
     if gate == "Z":
@@ -65,7 +72,7 @@ def _format_gate(operation: CheckedOperation) -> str:
         return f"CNOT {operation.controls[0]} {targets[0]}"
     if gate == "SWAP":
         t0, t1 = targets[0], targets[1]
-        return f"CNOT {t0} {t1} ;; CNOT {t1} {t0} ;; CNOT {t0} {t1}"
+        return f"CNOT {t0} {t1} ; CNOT {t1} {t0} ; CNOT {t0} {t1}"
 
     raise InvalidIrError(f"unsupported gate {gate!r}")
 
@@ -75,7 +82,22 @@ def _format_state(
     *,
     num_qubits: int,
 ) -> str:
-    """Format exact amplitude tokens into QuantumLib Dirac vector notation."""
+    """Format exact amplitude tokens into QuantumLib Dirac vector notation.
+
+    SQIR ENDIANNESS AND REVERSAL INVARIANCE:
+    In SQIR and QuantumLib, the n-qubit tensor product is ordered from qubit 0 to
+    qubit n-1 (left-to-right):
+        v = q_0 ⊗ q_1 ⊗ ... ⊗ q_{n-1}
+    Consequently, in Dirac notation ∣b_0, b_1, ..., b_{n-1}⟩, the k-th component
+    corresponds directly to qubit k: b_k = (index >> k) & 1.
+
+    NOTE ON REVERSAL INVARIANCE:
+    We only noticed this endianness difference when introducing Deutsch-Jozsa,
+    because Bell (|00⟩ + |11⟩)/√2 and GHZ(3) (|000⟩ + |111⟩)/√2 are completely
+    symmetric under qubit reversal (reversal-invariant). In Deutsch-Jozsa, where
+    the ancilla is qubit 2 and query qubits are 0 and 1, this reversal asymmetry
+    makes the endianness convention essential.
+    """
 
     terms: list[str] = []
     dim = 1 << num_qubits
@@ -92,8 +114,9 @@ def _format_state(
         if token == "zero":
             continue
 
-        # In QuantumLib Dirac notation, ∣b_{n-1}, ..., b_0⟩ maps qubit n-1 down to 0.
-        bits = [(index >> (num_qubits - 1 - k)) & 1 for k in range(num_qubits)]
+        # In QuantumLib Dirac notation, ∣b_0, b_1, ..., b_{n-1}⟩ maps qubit k to position k.
+        # Bell and GHZ are invariant under bit reversal, so only Deutsch-Jozsa revealed this.
+        bits = [(index >> k) & 1 for k in range(num_qubits)]
         basis_str = "∣" + ", ".join(str(b) for b in bits) + "⟩"
 
         if token == "one":
@@ -149,9 +172,10 @@ def generate_coq_module(
     theorem_name = f"{prefix}_correct"
 
     if checked_ir.operations:
-        gates_str = " ;; ".join(_format_gate(op) for op in checked_ir.operations)
+        gates_str = " ; ".join(_format_gate(op) for op in checked_ir.operations)
     else:
-        gates_str = "skip"
+        gates_str = "SKIP"
+
 
     input_expr = _format_state(
         contract_data["initial_state"],

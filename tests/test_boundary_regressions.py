@@ -184,7 +184,10 @@ def test_direct_checked_circuit_checks_register_bounds() -> None:
 
 
 @pytest.mark.parametrize("name,module_name", [
-    ("bell", "GeneratedBell"), ("ghz3", "GeneratedGhz3"),
+    ("bell", "GeneratedBell"),
+    ("ghz3", "GeneratedGhz3"),
+    ("dj2_constant", "GeneratedDj2Constant"),
+    ("dj2_balanced", "GeneratedDj2Balanced"),
 ])
 def test_committed_lean_is_reproducible(name: str, module_name: str, tmp_path: Path) -> None:
     ir = json.loads((PROJECT_ROOT / f"examples/{name}_ir.json").read_text())

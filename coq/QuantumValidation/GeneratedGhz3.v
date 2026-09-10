@@ -8,7 +8,7 @@ Regenerate this module instead of editing it by hand.
 *)
 
 Definition ghz_three_qubit_preparation_circuit : base_ucom 3 :=
-  H 0 ;; CNOT 0 1 ;; CNOT 1 2.
+  H 0 ; CNOT 0 1 ; CNOT 1 2.
 
 Definition ghz_three_qubit_preparation_input : Vector 8 :=
   ∣0, 0, 0⟩.

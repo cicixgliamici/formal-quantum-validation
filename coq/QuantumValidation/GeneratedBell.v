@@ -8,7 +8,7 @@ Regenerate this module instead of editing it by hand.
 *)
 
 Definition bell_state_preparation_circuit : base_ucom 2 :=
-  H 0 ;; CNOT 0 1.
+  H 0 ; CNOT 0 1.
 
 Definition bell_state_preparation_input : Vector 4 :=
   ∣0, 0⟩.
