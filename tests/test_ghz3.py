@@ -1,3 +1,5 @@
+"""Check fixed and parametric GHZ behavior across supported workflows."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -5,8 +7,8 @@ import pytest
 from qiskit.quantum_info import Statevector
 
 from fqv.frontend.qiskit.circuits import (
-    build_ghz_circuit,
     build_ghz3_circuit,
+    build_ghz_circuit,
     ghz3_contract,
 )
 from fqv.frontend.qiskit.extraction import circuit_to_ir

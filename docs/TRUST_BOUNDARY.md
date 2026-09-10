@@ -4,14 +4,17 @@ The project distinguishes machine-checked mathematics from executable
 evidence. A successful command is not, by itself, a proof of every component
 in the pipeline.
 
-## Machine-checked in Milestone 2
+## Machine-checked Lean foundation
 
-- The two-qubit state space is represented by four complex amplitudes.
-- Gate semantics use Qiskit's documented little-endian basis order.
-- Circuits execute their gates from left to right.
-- The Bell circuit is concrete formal data.
-- Lean checks that the Bell circuit maps `|00>` to `|Phi+>`.
-- The theorem contains no `sorry` and uses no Bell-specific axiom.
+- States and circuits are defined for every finite qubit count.
+- Gate operands are bounded, and CNOT/SWAP operands are proved distinct.
+- Gate semantics use Qiskit's documented little-endian basis order, and
+  circuits execute from left to right.
+- Lean checks exact target equalities for Bell, GHZ(3), and both fixed DJ cases.
+- An inductive theorem proves GHZ preparation for every positive register size.
+- Every supported circuit preserves complex inner products, squared norm, and
+  normalization.
+- Project declarations contain no `sorry`, project axiom, or opaque shortcut.
 
 ## Trusted components
 
@@ -36,8 +39,8 @@ families require reusable semantic lemmas and induction.
 
 ## Generated proof obligations
 
-Milestone 3 generates the formal circuit, input state, target state, and
-theorem statement from versioned JSON. Lean still checks the resulting proof.
+The generation pipeline produces the formal circuit, input state, target state,
+and theorem statement from versioned JSON. Lean still checks the resulting proof.
 On both Linux and Windows, the Python CI job regenerates the Bell, GHZ(3),
 DJ constant, and DJ balanced Lean modules from their committed IR and contracts.
 It compares temporary output with all four committed `.lean` artifacts and
@@ -55,8 +58,14 @@ the Python generator itself into verified software.
 ## Coq/SQIR regression
 
 Generated clients use `QuantumValidation.Circuit`: public gate constructors,
-ordered composition, SQIR lowering, and a shared proof tactic. Operand bounds
-remain Python checked-IR preconditions, not proofs carried by Coq constructors.
+ordered composition, SQIR lowering, and a shared proof tactic. The constructors
+store natural-number operands without embedded proofs. Coq nevertheless defines
+source-level well-formedness and proves that `compile_circuit` maps every
+well-formed circuit to an SQIR `uc_well_typed` program. Generated clients prove
+their source circuit well formed and derive this SQIR judgment automatically.
+Checked IR and the Python translator nevertheless remain part of the end-to-end
+trust boundary because Coq checks the generated circuit, not its correspondence
+with the original Qiskit object.
 The Coq gate regression checks 248 basis cases against independent exact bit
 rules for all six gates on one to three qubits, including reversed and
 non-adjacent operands. It also checks empty circuits and complex inputs.
@@ -68,6 +77,12 @@ They first compile the correct theorem and the mutated definitions, then require
 the mutated theorem to fail. Drift tests compare every generated `.v` artifact
 with fresh production-generator output byte for byte.
 
+A direct integration path constructs both DJ variants in Qiskit, extracts fresh
+IR with the production frontend, generates Coq source, and requires `coqc` to
+accept it. This connects the live Qiskit representation to Coq in one test, but
+remains finite evidence rather than a proof that extraction or generation is
+correct for arbitrary circuits.
+
 These checks add Coq's kernel, SQIR/QuantumLib definitions and their imported
 assumptions, and the Python Coq translator to the relevant trust boundary.
 They do not prove the translator correct or establish equivalence of the two
@@ -75,10 +90,10 @@ formal backends for arbitrary circuits.
 
 ## Transpilation equivalence
 
-Milestone 4 checks source and transpiled circuits with Qiskit's complete
-operator representation, accounting for stored layout information and global
-phase. This is stronger than comparing their behavior on the contract's one
-initial state.
+The transpilation pipeline checks source and transpiled circuits with Qiskit's
+complete operator representation, accounting for stored layout information and
+global phase. This is stronger than comparing their behavior on the contract's
+one initial state.
 
 Qiskit, NumPy, the selected transpiler passes, and the numerical equivalence
 threshold remain trusted. Lean does not currently certify that Qiskit's

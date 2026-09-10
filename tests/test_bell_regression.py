@@ -1,3 +1,5 @@
+"""Retain the original Bell milestone as an independent regression baseline."""
+
 from __future__ import annotations
 
 import numpy as np

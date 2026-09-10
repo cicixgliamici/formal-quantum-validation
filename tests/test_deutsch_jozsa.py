@@ -5,9 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-from qiskit.quantum_info import Statevector
-
 from fqv.backend.coq.generator import (
     _format_state,
     generate_coq_module,
@@ -25,7 +22,6 @@ from fqv.frontend.qiskit.extraction import circuit_to_ir
 from fqv.frontend.qiskit.verification import verify_contract
 from fqv.ir.raw import load_raw_ir
 from fqv.ir.validation import check_ir
-
 
 PROJECT_ROOT = Path(__file__).parents[1]
 EXAMPLES_DIR = PROJECT_ROOT / "examples"

@@ -1,8 +1,8 @@
 # Transpilation validation
 
-Milestone 4 checks whether Qiskit transpilation preserves the complete unitary
-transformation of a logical circuit. This is separate from checking one
-state-preparation contract.
+The transpilation pipeline checks whether Qiskit transpilation preserves the
+complete unitary transformation of a logical circuit. This is separate from
+checking one state-preparation contract.
 
 For example, identity and `Z` both preserve `|0>`, but they are not equivalent
 operators because they act differently on superpositions. The transpilation

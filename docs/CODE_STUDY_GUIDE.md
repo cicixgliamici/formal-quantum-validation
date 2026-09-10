@@ -28,11 +28,11 @@ Questions to answer:
 
 Read:
 
-- `domain/amplitudes.py`;
-- `domain/expectations.py`;
-- `domain/contracts.py`;
-- `domain/contract_validation.py`;
-- `domain/contract_parser.py`.
+- `src/fqv/domain/amplitudes.py`;
+- `src/fqv/domain/expectations.py`;
+- `src/fqv/domain/contracts.py`;
+- `src/fqv/domain/contract_validation.py`;
+- `src/fqv/domain/contract_parser.py`.
 
 `QuantumContract` is intentionally boring: it is immutable data and has no
 Qiskit, JSON, file, or Lean dependency. Parsing is separate so a malformed
@@ -48,11 +48,11 @@ Study exercise:
 
 Read:
 
-- `ir/raw.py`;
-- `ir/checked.py`;
-- `ir/validation.py`;
-- `ir/linear.py`;
-- `ir/serialization.py`.
+- `src/fqv/ir/raw.py`;
+- `src/fqv/ir/checked.py`;
+- `src/fqv/ir/validation.py`;
+- `src/fqv/ir/linear.py`;
+- `src/fqv/ir/serialization.py`.
 
 `RawCircuitIr` is only JSON-shaped data. `CheckedCircuitIr` is immutable and
 can be created only after gate names, arities, indices, and distinct operands
@@ -69,9 +69,9 @@ Study exercise:
 
 Read:
 
-- `frontend/qiskit/extraction.py`;
-- `frontend/qiskit/conversion.py`;
-- `frontend/qiskit/circuits.py`.
+- `src/fqv/frontend/qiskit/extraction.py`;
+- `src/fqv/frontend/qiskit/conversion.py`;
+- `src/fqv/frontend/qiskit/circuits.py`.
 
 Extraction maps provider objects to shared IR. Conversion maps checked IR back
 to Qiskit. These functions are deliberately mechanical because a complicated
@@ -88,11 +88,11 @@ Study exercise:
 
 Read:
 
-- `frontend/qiskit/checks/structure.py`;
-- `frontend/qiskit/checks/state.py`;
-- `frontend/qiskit/checks/probabilities.py`;
-- `frontend/qiskit/verification.py`;
-- `pipeline/verify.py`.
+- `src/fqv/frontend/qiskit/checks/structure.py`;
+- `src/fqv/frontend/qiskit/checks/state.py`;
+- `src/fqv/frontend/qiskit/checks/probabilities.py`;
+- `src/fqv/frontend/qiskit/verification.py`;
+- `src/fqv/pipeline/verify.py`.
 
 The checks are separate because they provide different evidence:
 
@@ -112,7 +112,7 @@ Study exercise:
 
 ## 6. Understand transformation evidence
 
-Read `pipeline/transpilation.py`.
+Read `src/fqv/pipeline/transpilation.py`.
 
 The source and transpiled circuits are compared as complete operators, not only
 on the contract input. One-input comparison would incorrectly accept distinct
@@ -125,11 +125,11 @@ Study exercise:
 2. Explain why process fidelity is paired with entry-wise error.
 3. State clearly why this report is evidence rather than a Lean proof.
 
-## 7. Follow generation into Lean
+## 7. Follow generation into the formal backends
 
 Read:
 
-- `backend/lean/generator.py`;
+- `src/fqv/backend/lean/generator.py`;
 - `lean/QuantumValidation/GeneralCircuit.lean`;
 - `lean/QuantumValidation/GeneralUnitarity.lean`;
 - `lean/QuantumValidation/ParametricGhz.lean`.
@@ -146,9 +146,31 @@ Study exercise:
 3. Distinguish generator correctness from kernel checking.
 4. State the exact theorem proved for GHZ(n).
 
+Then read:
+
+- `src/fqv/backend/coq/generator.py`;
+- `coq/QuantumValidation/Circuit.v`;
+- `coq_tests/conftest.py`;
+- `coq_tests/test_coq_compilation.py`;
+- `coq_tests/test_gate_semantics.py`;
+- `docs/COQ_SQIR.md`.
+
+The Coq backend serializes the same checked IR and exact contract tokens into
+a small public circuit language. `Circuit.v` lowers that language to SQIR and
+uses QuantumLib matrix semantics. Its preservation theorem connects source
+well-formedness to SQIR's `uc_well_typed`; this is distinct from proving that
+the Python generator always emits the intended source circuit.
+
+Study exercise:
+
+1. Trace one Qiskit DJ circuit through extraction, generation, and `coqc`.
+2. Explain why `circuit_well_formed` is separate from the `Gate` constructors.
+3. State exactly what `circuit_well_formed_compile_preservation` proves.
+4. Compare the independent Coq basis oracle with the Qiskit-derived Lean oracle.
+
 ## 8. Read the command last
 
-Read `cli.py` only after understanding the layers. It contains very little
+Read `src/fqv/cli.py` only after understanding the layers. It contains very little
 scientific logic: its job is to connect raw loading, checked construction,
 frontend conversion, pipeline execution, and report I/O.
 
@@ -162,9 +184,8 @@ raw IR
   -> optional transpilation evidence
 
 raw IR + raw contract
-  -> Lean generator
-  -> generated theorem
-  -> Lean kernel
+  +-> Lean generator -> generated theorem -> Lean kernel
+  +-> Coq generator -> Circuit.v -> SQIR theorem -> Coq kernel
 ```
 
 ## 9. Presentation checklist
@@ -174,7 +195,9 @@ Before presenting, be able to answer:
 1. What is formally proved and what is numerically checked?
 2. Which components remain trusted?
 3. Why is complete-operator equivalence stronger than state preparation?
-4. Why does linear ownership not prove safe ancilla release?
-5. What new guarantee will the planned Linear IR add?
-6. What would the proposed lowering-soundness theorem connect?
-7. Why are Bell and GHZ regressions rather than the scientific novelty?
+4. Why does structural well-formedness not prove semantic correctness?
+5. What guarantee could a future resource-linear IR add beyond IR 0.1?
+6. What does the current Coq compilation-preservation theorem connect, and
+   what translator-correctness result is still absent?
+7. Why are Bell and fixed GHZ examples regressions rather than universal
+   correctness claims?

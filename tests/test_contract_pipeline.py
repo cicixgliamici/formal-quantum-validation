@@ -1,3 +1,5 @@
+"""Exercise shared contracts from parsing through executable and formal paths."""
+
 from __future__ import annotations
 
 import json
@@ -9,7 +11,6 @@ from fqv.backend.lean.generator import generate_lean_module
 from fqv.domain.contract_parser import contract_from_dict
 from fqv.domain.contract_validation import InvalidContractError
 from fqv.ir.validation import InvalidIrError, check_ir
-
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONTRACT_PATH = (

@@ -7,7 +7,6 @@ import pytest
 
 from fqv.backend.coq.generator import generate_coq_module
 
-
 ROOT = Path(__file__).resolve().parents[1]
 CASES = [
     ("bell", "GeneratedBell"),

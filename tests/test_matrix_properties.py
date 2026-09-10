@@ -14,7 +14,6 @@ from qiskit.quantum_info import Operator
 from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
 from fqv.ir.validation import check_ir
 
-
 GATE_CASES = [
     pytest.param({"gate": "I", "targets": [0]}, np.eye(2), id="identity"),
     pytest.param({"gate": "X", "targets": [0]}, [[0, 1], [1, 0]], id="pauli-x"),
@@ -28,6 +27,10 @@ GATE_CASES = [
                  [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
                  id="swap"),
 ]
+
+# Tracelessness is a Pauli-specific claim, so unrelated gates must not create
+# vacuous passing parameter cases for this test.
+PAULI_CASES = [case for case in GATE_CASES if case.values[0]["gate"] in {"X", "Z"}]
 
 
 def _gate_matrix(operation: dict, dimension: int) -> np.ndarray:
@@ -114,7 +117,7 @@ class TestMatrixCounterexamples:
 
 
 class TestAdvancedMatrixInvariants:
-    """Evaluate broader mathematical properties of the matrices."""
+    """Evaluate spectral properties not covered by direct gate action."""
 
     @pytest.mark.parametrize("operation,expected", GATE_CASES)
     def test_matrix_determinants_are_phases(self, operation: dict, expected) -> None:
@@ -128,9 +131,8 @@ class TestAdvancedMatrixInvariants:
         eigenvalues = np.linalg.eigvals(matrix)
         np.testing.assert_allclose(np.abs(eigenvalues), 1.0, atol=1e-12, rtol=0)
 
-    @pytest.mark.parametrize("operation,expected", GATE_CASES)
+    @pytest.mark.parametrize("operation,expected", PAULI_CASES)
     def test_pauli_matrices_are_traceless(self, operation: dict, expected) -> None:
-        if operation["gate"] in ("X", "Z"):
-            matrix = _gate_matrix(operation, len(expected))
-            trace = np.trace(matrix)
-            assert np.abs(trace) == pytest.approx(0.0, abs=1e-12)
+        matrix = _gate_matrix(operation, len(expected))
+        trace = np.trace(matrix)
+        assert np.abs(trace) == pytest.approx(0.0, abs=1e-12)

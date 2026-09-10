@@ -25,6 +25,7 @@ py -3.12 -m venv .venv
 python -m pip install -c constraints-python312.txt -e ".[dev]"
 python -m pip check
 python -m pytest
+python -m ruff check src tests coq_tests integration_tests
 ```
 
 On a POSIX shell:
@@ -36,6 +37,7 @@ python -m pip install --upgrade pip
 python -m pip install -c constraints-python312.txt -e ".[dev]"
 python -m pip check
 python -m pytest
+python -m ruff check src tests coq_tests integration_tests
 ```
 
 The direct Python dependencies are pinned in `pyproject.toml`; the tested
@@ -50,6 +52,10 @@ On Windows, commands can also be run explicitly through
 Python 3.14 installation is not a substitute for this Python 3.12 environment.
 The default `fqv-verify` example uses packaged resources and works outside the
 repository; custom `--ir` and `--contract` paths remain relative to the caller.
+
+Ruff checks correctness errors, import ordering, and core Python style in CI.
+`tests/test_documentation.py` verifies every local Markdown link without making
+documentation tests depend on external network availability.
 
 ## Coq environment
 
@@ -70,6 +76,9 @@ opam exec -- python -m pytest coq_tests -v
 Install the Python project in a Python 3.12 environment as described above.
 The Coq suite first compiles the shared `Circuit.v` abstraction, then compiles
 the four generated clients against it in temporary directories.
+It also constructs both Deutsch-Jozsa variants in Qiskit, extracts fresh IR,
+generates Coq source, and submits the resulting obligations to `coqc`. This is
+the direct Qiskit-to-Coq integration path; it does not read committed DJ IR.
 For both DJ examples it compiles a freshly generated correct target, checks
 the mutated definitions separately, and requires compilation of the false
 theorem to fail. Missing tools, imports, and timeouts fail the suite. The
@@ -170,11 +179,9 @@ fqv-generate-lean `
 lake build
 ```
 
-## Version update policy
-
 ## Matrix property tests
 
-The commented pytest classes in `tests/test_matrix_properties.py` check the
+The pytest classes in `tests/test_matrix_properties.py` check the
 actual IR-to-Qiskit matrices against independent literal matrices. They test
 both adjoint identities, self-inversion of the supported gates, and preservation
 of norms and complex inner products. Negative examples include a projector,

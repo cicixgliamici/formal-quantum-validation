@@ -1,3 +1,5 @@
+"""Protect dependency direction and the checked-IR architecture boundary."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,7 +9,6 @@ from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
 from fqv.frontend.qiskit.extraction import circuit_to_ir
 from fqv.ir.raw import load_raw_ir
 from fqv.ir.validation import check_ir
-
 
 PROJECT_ROOT = Path(__file__).parents[1]
 

@@ -14,11 +14,11 @@ cross-system regression, not a proof of the Python or Qiskit implementations.
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 from collections.abc import Iterator
 from itertools import permutations
 from pathlib import Path
-import shutil
-import subprocess
 
 import pytest
 from qiskit import QuantumCircuit
@@ -27,7 +27,6 @@ from qiskit.quantum_info import Statevector
 from fqv.backend.lean.generator import generate_lean_module
 from fqv.domain.amplitudes import AmplitudeToken, decode_amplitude
 from fqv.frontend.qiskit.extraction import circuit_to_ir
-
 
 PROJECT_ROOT = Path(__file__).parents[1]
 LEAN_IMPORT = "import QuantumValidation.GeneralCircuit\n"

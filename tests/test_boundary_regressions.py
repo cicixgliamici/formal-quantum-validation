@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -23,7 +23,6 @@ from fqv.frontend.qiskit.verification import verify_contract
 from fqv.ir.checked import CheckedCircuitIr, CheckedOperation, GateName
 from fqv.ir.validation import InvalidIrError, check_ir
 from fqv.pipeline.transpilation import TranspilationConfig, check_operator_equivalence
-
 
 PROJECT_ROOT = Path(__file__).parents[1]
 

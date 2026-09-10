@@ -15,8 +15,8 @@ import argparse
 from pathlib import Path
 
 from fqv.domain.contract_parser import load_contract
-from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
 from fqv.frontend.qiskit.circuits import bell_contract, build_bell_circuit
+from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
 from fqv.frontend.qiskit.extraction import export_ir
 from fqv.frontend.qiskit.verification import verify_contract
 from fqv.ir.raw import load_raw_ir

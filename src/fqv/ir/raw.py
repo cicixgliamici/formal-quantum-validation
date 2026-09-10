@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from typing import Any, TypeAlias
 
-
 RawOperation: TypeAlias = dict[str, Any]
 RawCircuitIr: TypeAlias = dict[str, Any]
 

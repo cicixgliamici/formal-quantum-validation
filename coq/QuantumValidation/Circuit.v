@@ -25,6 +25,23 @@ Arguments GateSWAP {dim} _ _.
 
 Definition Circuit (dim : nat) := list (Gate dim).
 
+(* Keep source-level validity independent of SQIR so generated circuits expose
+   exactly the bounds and distinctness guarantees supplied by checked IR. *)
+Definition gate_well_formed {dim : nat} (gate : Gate dim) : Prop :=
+  match gate with
+  | GateI target
+  | GateX target
+  | GateZ target
+  | GateH target => (target < dim)%nat
+  | GateCNOT control target
+  | GateSWAP control target =>
+      (control < dim)%nat /\ (target < dim)%nat /\ control <> target
+  end.
+
+(* A positive dimension also makes the empty circuit's SKIP compilation valid. *)
+Definition circuit_well_formed {dim : nat} (circuit : Circuit dim) : Prop :=
+  (0 < dim)%nat /\ Forall gate_well_formed circuit.
+
 Local Open Scope ucom_scope.
 
 Definition compile_gate {dim : nat} (gate : Gate dim) : base_ucom dim :=
@@ -47,6 +64,34 @@ Fixpoint compile_circuit {dim : nat} (circuit : Circuit dim) : base_ucom dim :=
   | [gate] => compile_gate gate
   | gate :: remaining => compile_gate gate ; compile_circuit remaining
   end.
+
+Lemma compile_gate_well_typed {dim : nat} (gate : Gate dim) :
+  gate_well_formed gate -> uc_well_typed (compile_gate gate).
+Proof.
+  destruct gate; cbn [gate_well_formed compile_gate]; intros valid.
+  - apply uc_well_typed_ID. exact valid.
+  - apply uc_well_typed_X. exact valid.
+  - apply uc_well_typed_Rz. exact valid.
+  - apply uc_well_typed_H. exact valid.
+  - apply uc_well_typed_CNOT. exact valid.
+  - destruct valid as [first_valid [second_valid distinct]].
+    repeat apply WT_seq; apply uc_well_typed_CNOT; lia.
+Qed.
+
+Theorem circuit_well_formed_compile_preservation {dim : nat}
+    (circuit : Circuit dim) :
+  circuit_well_formed circuit -> uc_well_typed (compile_circuit circuit).
+Proof.
+  intros [positive_dim valid].
+  induction circuit as [| gate remaining IH].
+  - cbn [compile_circuit]. apply uc_well_typed_ID. exact positive_dim.
+  - inversion valid as [| ? ? gate_valid remaining_valid]; subst.
+    destruct remaining as [| next tail].
+    + cbn [compile_circuit]. apply compile_gate_well_typed. exact gate_valid.
+    + cbn [compile_circuit]. apply WT_seq.
+      * apply compile_gate_well_typed. exact gate_valid.
+      * apply IH. exact remaining_valid.
+Qed.
 
 Definition run {dim : nat} (circuit : Circuit dim) : Square (2 ^ dim) :=
   uc_eval (compile_circuit circuit).

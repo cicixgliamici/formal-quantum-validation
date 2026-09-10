@@ -1,7 +1,7 @@
 # Shared contract format
 
 Contract schema version `0.1` is the single semantic specification consumed by
-the executable Python checker and the Lean module generator.
+the executable Python checker and the Lean and Coq module generators.
 
 The canonical Bell example is distributed at
 `src/fqv/data/bell.contract.json`. The matching circuit IR is
@@ -16,10 +16,9 @@ States use symbolic tokens instead of decimal approximations:
 - `i` and `minus_i`
 - `inv_sqrt_two` and `minus_inv_sqrt_two`
 
-Python interprets these tokens as complex numbers for simulation. Lean maps
-the same tokens to exact expressions such as `invSqrtTwo`. This decision
-prevents a decimal approximation from becoming the statement of a formal
-theorem.
+Python interprets these tokens as complex numbers for simulation. Lean and Coq
+map the same tokens to exact expressions in their respective libraries. This
+prevents a decimal approximation from becoming a formal theorem statement.
 
 Each state must contain exactly `2 ^ qubits` amplitudes. Version `0.1` does not
 yet provide a general expression language for arbitrary algebraic amplitudes.
@@ -29,10 +28,11 @@ Unknown fields and non-finite tolerances are rejected.
 
 ## Equality and global phase
 
-The target denotes an exact vector, including global phase, as in the generated
-Lean equality. Python checks amplitude agreement with absolute tolerance `1e-12`
-and additionally enforces `fidelity_threshold`. Fidelity alone is insufficient:
-vectors differing only by global phase have fidelity one but fail this contract.
+The target denotes an exact vector, including global phase, as in both generated
+formal equalities. Python checks amplitude agreement with absolute tolerance
+`1e-12` and additionally enforces `fidelity_threshold`. Fidelity alone is
+insufficient: vectors differing only by global phase have fidelity one but fail
+this contract.
 
 The separate transpilation report explicitly compares operators *up to global
 phase*. Passing that numerical comparison does not establish the exact-vector
@@ -48,16 +48,16 @@ layouts because neither can be preserved by the current representation.
 - `probabilities` define computational-basis observations.
 - `resources` describe gate inventory constraints on the logical circuit.
 
-Resource constraints are not part of the generated Lean state-correctness
-theorem. They remain executable structural checks because transpilation may
-change them without changing circuit semantics.
+Resource constraints are not part of the generated Lean or Coq
+state-correctness theorem. They remain executable structural checks because
+transpilation may change them without changing circuit semantics.
 
-## Generating Lean
+## Generating formal obligations
 
 From an installed development environment:
 
 ```powershell
-fqv-generate-lean `
+fqv-generate --backend lean `
   examples/bell_ir.json `
   src/fqv/data/bell.contract.json `
   lean/QuantumValidation/GeneratedBell.lean
@@ -75,10 +75,20 @@ Generation performs these checks before writing a module:
 The same command supports the three-qubit GHZ example:
 
 ```powershell
-fqv-generate-lean `
+fqv-generate --backend lean `
   examples/ghz3_ir.json `
   src/fqv/data/ghz3.contract.json `
   lean/QuantumValidation/GeneratedGhz3.lean
+```
+
+Select the Coq backend and a `.v` destination to generate the corresponding
+SQIR obligation:
+
+```powershell
+fqv-generate --backend coq `
+  examples/dj2_balanced_ir.json `
+  src/fqv/data/dj2_balanced.contract.json `
+  coq/QuantumValidation/GeneratedDj2Balanced.v
 ```
 
 The generated proof enumerates computational-basis assignments. This is clear
@@ -86,5 +96,5 @@ and effective for small review cases, but its size grows exponentially with
 the number of qubits. Larger parametric proofs will require reusable lemmas
 instead of enumeration.
 
-Generated modules should be reviewed as derived evidence. Editing them by hand
-would break traceability to the source IR and contract.
+Generated Lean and Coq modules should be reviewed as derived evidence. Editing
+them by hand would break traceability to the source IR and contract.

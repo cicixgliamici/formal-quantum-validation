@@ -9,7 +9,8 @@ Currently verified:
 - fixed GHZ(3) preparation;
 - two fixed Deutsch-Jozsa examples: constant `f = 0` and balanced `f(x0, x1) = x0`;
 - the full nonempty GHZ(n) family in Lean;
-- unitarity and normalization preservation for every supported circuit in Lean.
+- unitarity and normalization preservation for every supported circuit in Lean;
+- preservation from well-formed Coq circuits to SQIR `uc_well_typed` programs.
 
 The supported IR contains `I`, `X`, `Z`, `H`, `CNOT`, and `SWAP`.
 
@@ -21,7 +22,7 @@ fqv-verify `
   --contract src/fqv/data/ghz3.contract.json
 ```
 
-Run all checks:
+Run the default Python and Lean checks:
 
 Use the Python 3.12.10 environment described in
 [development](docs/DEVELOPMENT.md), with `constraints-python312.txt` applied.
@@ -30,6 +31,16 @@ Use the Python 3.12.10 environment described in
 python -m pytest
 python -m pip check
 lake build
+```
+
+The toolchain-dependent integration suites run separately:
+
+```powershell
+python -m pytest integration_tests -v
+```
+
+```bash
+opam exec -- python -m pytest coq_tests -v
 ```
 
 The Coq/SQIR backend checks Bell, GHZ(3), and the two fixed Deutsch-Jozsa
@@ -46,4 +57,6 @@ DJ constant, and DJ balanced on both Linux and Windows.
 See [architecture](docs/ARCHITECTURE.md), the
 [code study guide](docs/CODE_STUDY_GUIDE.md),
 [development](docs/DEVELOPMENT.md), and the
-[formal trust boundary](docs/TRUST_BOUNDARY.md).
+[formal trust boundary](docs/TRUST_BOUNDARY.md). Reviewers can use the
+[presentation guide](docs/PRESENTATION_GUIDE.md) for the main claims and the
+[Coq/SQIR guide](docs/COQ_SQIR.md) for the second formal backend.

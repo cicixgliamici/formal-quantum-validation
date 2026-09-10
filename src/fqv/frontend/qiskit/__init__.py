@@ -4,8 +4,8 @@ from fqv.frontend.qiskit.circuits import (
     bell_contract,
     build_bell_circuit,
     build_bell_minus_circuit,
-    build_ghz_circuit,
     build_ghz3_circuit,
+    build_ghz_circuit,
     ghz3_contract,
 )
 from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit

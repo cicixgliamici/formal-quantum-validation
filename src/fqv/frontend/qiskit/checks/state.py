@@ -6,8 +6,8 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
-from fqv.domain.contracts import QuantumContract
 from fqv.domain.contract_validation import InvalidContractError
+from fqv.domain.contracts import QuantumContract
 from fqv.domain.reports import CheckResult, VerificationReport
 
 

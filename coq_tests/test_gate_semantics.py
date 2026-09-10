@@ -12,18 +12,21 @@ import pytest
 
 from fqv.backend.coq.generator import generate_coq_module
 
-
 GATES = ("I", "X", "Z", "H", "CNOT", "SWAP")
 COQ_IMPORT = "From QuantumValidation Require Import Circuit.\n"
 
 
 def basis_state(num_qubits: int, index: int, token: str = "one") -> list[str]:
+    """Return one exact computational-basis state in IR amplitude order."""
+
     state = ["zero"] * (1 << num_qubits)
     state[index] = token
     return state
 
 
-def expected_state(gate: str, operands: tuple[int, ...], basis: int, dim: int):
+def expected_state(
+    gate: str, operands: tuple[int, ...], basis: int, dim: int,
+) -> list[str]:
     """Implement the textbook basis action in the IR's little-endian order."""
     first = operands[0]
     bit = (basis >> first) & 1
@@ -43,12 +46,18 @@ def expected_state(gate: str, operands: tuple[int, ...], basis: int, dim: int):
 
 
 def operation(gate: str, operands: tuple[int, ...]) -> dict:
+    """Build the raw IR shape for one independently interpreted gate."""
+
     if gate == "CNOT":
         return {"gate": gate, "controls": [operands[0]], "targets": [operands[1]]}
     return {"gate": gate, "targets": list(operands)}
 
 
-def obligation(dim: int, operations: list[dict], initial: list[str], target: list[str]):
+def obligation(
+    dim: int, operations: list[dict], initial: list[str], target: list[str],
+) -> str:
+    """Generate a Coq equality from an exact independently computed case."""
+
     ir = {"schema_version": "0.1", "name": "basis_regression",
           "qubits": dim, "operations": operations}
     contract = {
@@ -61,6 +70,8 @@ def obligation(dim: int, operations: list[dict], initial: list[str], target: lis
 
 
 def compile_cases(sources: list[str], destination: Path, coq_compile) -> None:
+    """Compile many cases in isolated modules while sharing one Coq process."""
+
     # Require belongs at file scope; modules isolate production theorem names.
     assert all(source.startswith(COQ_IMPORT) for source in sources)
     source = COQ_IMPORT + "\n".join(
@@ -76,6 +87,8 @@ def compile_cases(sources: list[str], destination: Path, coq_compile) -> None:
     if dim > 1 or gate not in {"CNOT", "SWAP"}
 ])
 def test_every_gate_placement_and_basis(gate: str, dim: int, tmp_path: Path, coq_compile):
+    """Check every valid placement and basis input for one gate and dimension."""
+
     width = 2 if gate in {"CNOT", "SWAP"} else 1
     sources = [
         obligation(dim, [operation(gate, operands)], basis_state(dim, basis),
@@ -90,12 +103,16 @@ def test_every_gate_placement_and_basis(gate: str, dim: int, tmp_path: Path, coq
 
 @pytest.mark.parametrize("dim", [1, 2, 3])
 def test_empty_circuit_is_identity(dim: int, tmp_path: Path, coq_compile):
+    """Ensure the positive-dimensional SKIP lowering acts as identity."""
+
     sources = [obligation(dim, [], basis_state(dim, basis), basis_state(dim, basis))
                for basis in range(1 << dim)]
     compile_cases(sources, tmp_path / "Empty.v", coq_compile)
 
 
 def test_exact_signed_and_imaginary_inputs(tmp_path: Path, coq_compile):
+    """Exercise exact Coq serialization beyond unsigned real basis states."""
+
     # Basis gate cases exercise real signs; these also check complex serialization.
     sources = [
         obligation(1, [operation("I", (0,))], basis_state(1, 1, token),

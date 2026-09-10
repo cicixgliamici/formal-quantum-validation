@@ -24,8 +24,10 @@ pipeline      orchestration of verification and transformation stages
 - `backend.lean` and `backend.coq` translate validated inputs into proof
   obligations without executing Qiskit or invoking proof compilers.
 - `pipeline` composes stages and owns workflow policy.
-- The top-level modules such as `fqv.contracts` and `fqv.transpilation` are
-  compatibility wrappers. New code should import the layered packages.
+- The top-level modules such as `fqv.contracts` and `fqv.transpilation` preserve
+  the pre-refactor API throughout the 0.1 release line. New code should import
+  the layered packages; removing wrappers requires an explicit versioned API
+  decision rather than incidental cleanup.
 
 ## Main flows
 
@@ -48,7 +50,7 @@ raw contract -> parser --+
 ```
 
 The command `fqv-verify` accepts arbitrary IR and contract paths. `fqv-bell`
-remains an alias during the compatibility period.
+remains an alias throughout the 0.1 release line.
 
 ## Coq abstraction boundary
 
@@ -67,11 +69,18 @@ invoke `solve_circuit`. The test harness builds `Circuit.v` first in a fresh
 session directory, then compiles clients against that artifact; a stale local
 `Circuit.vo` cannot hide an error.
 
-Operand bounds, distinct control/target operands, and positive register sizes
-remain checked-IR preconditions. Coq gate constructors carry natural-number
-operands rather than proofs of these conditions. In particular, the empty
-circuit lowers to SQIR's `SKIP` on qubit zero and is supported for positive
-dimensions only. This layer does not establish translator correctness.
+Coq gate constructors carry natural-number operands rather than dependent
+proofs. The separate `gate_well_formed` and `circuit_well_formed` predicates
+state operand bounds, distinct binary operands, and positive register size.
+`circuit_well_formed_compile_preservation` proves that compiling a well-formed
+source circuit produces an SQIR `uc_well_typed` program. The positive-dimension
+condition makes the empty circuit's `SKIP` on qubit zero well typed.
+
+Checked IR enforces the same source conditions before generation. Generated
+clients prove `circuit_well_formed` and derive SQIR `uc_well_typed` through the
+preservation theorem before stating the semantic target equality. This still
+does not verify the Python translator. See [Coq and SQIR semantics](COQ_SQIR.md)
+for the exact boundary.
 
 ## Regression and artifact boundaries
 
@@ -86,6 +95,8 @@ not the SQIR compiler or production matrix code. Both operand orders,
 non-adjacent operands, and spectator qubits are included. Additional cases check
 empty circuits and signed/imaginary input serialization. The DJ tests require
 both correct theorems to compile and both mutated targets to be rejected.
+They also build both DJ variants as live Qiskit circuits, extract fresh IR,
+generate Coq obligations, and submit those obligations directly to `coqc`.
 
 The existing Lean gate regression uses Qiskit-derived targets. The Coq basis
 regression instead checks textbook gate action directly; neither finite suite

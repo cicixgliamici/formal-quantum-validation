@@ -1,3 +1,5 @@
+"""Check reproducible, complete-operator transpilation evidence."""
+
 from __future__ import annotations
 
 from qiskit import QuantumCircuit

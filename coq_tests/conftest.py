@@ -1,17 +1,20 @@
 """Compile the shared Coq abstraction once, then test clients in isolation."""
 
-from functools import partial
-from pathlib import Path
 import shutil
 import subprocess
+from collections.abc import Callable
+from functools import partial
+from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[1]
+CoqCompiler = Callable[[str, Path], subprocess.CompletedProcess[str]]
 
 
-def compile_source(source: str, destination: Path, *, library: Path):
+def compile_source(
+    source: str, destination: Path, *, library: Path,
+) -> subprocess.CompletedProcess[str]:
     """Use a fresh output path and only this session's compiled Circuit module."""
     compiler = shutil.which("coqc")
     assert compiler is not None, "Run coq/setup.sh inside the pinned opam switch first"
@@ -40,7 +43,9 @@ def require_pinned_compiler() -> None:
 
 
 @pytest.fixture(scope="session")
-def coq_compile(tmp_path_factory):
+def coq_compile(tmp_path_factory: pytest.TempPathFactory) -> CoqCompiler:
+    """Compile the shared abstraction once and isolate every generated client."""
+
     require_pinned_compiler()
     library = tmp_path_factory.mktemp("coq_library")
     compile_client = partial(compile_source, library=library)

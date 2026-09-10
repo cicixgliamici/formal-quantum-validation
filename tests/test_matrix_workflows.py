@@ -96,30 +96,29 @@ class TestDisjointGateWorkflows:
         circuit1 = QuantumCircuit(2)
         circuit1.h(0)
         circuit1.x(1)
-        
+
         circuit2 = QuantumCircuit(2)
         circuit2.x(1)
         circuit2.h(0)
-        
+
         matrix1 = Operator(circuit1).data
         matrix2 = Operator(circuit2).data
-        
+
         np.testing.assert_allclose(matrix1, matrix2, atol=1e-12, rtol=0)
 
     def test_global_phase_does_not_affect_measurement_probabilities(self) -> None:
         """A global phase changes the matrix but not the observable probabilities."""
         circuit = build_bell_circuit()
         matrix1 = Operator(circuit).data
-        
+
         circuit_with_phase = circuit.copy()
         circuit_with_phase.global_phase = np.pi / 4
         matrix2 = Operator(circuit_with_phase).data
-        
-        # The matrices differ by a scalar factor
+
+        # Matrix equality is phase-sensitive even though observation is not.
         assert not np.allclose(matrix1, matrix2, atol=1e-12, rtol=0)
-        
-        # The probabilities are identical
+
         probs1 = Statevector(circuit).probabilities()
         probs2 = Statevector(circuit_with_phase).probabilities()
-        
+
         np.testing.assert_allclose(probs1, probs2, atol=1e-12, rtol=0)

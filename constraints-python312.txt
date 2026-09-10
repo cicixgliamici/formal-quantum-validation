@@ -10,6 +10,7 @@ packaging==26.3
 pluggy==1.6.0
 pytest==8.4.2
 qiskit==2.4.0
+ruff==0.16.6
 rustworkx==0.18.1
 scipy==1.18.1
 stevedore==5.9.1

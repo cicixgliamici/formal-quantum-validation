@@ -8,9 +8,9 @@ Lean build, not imported back into Python.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from typing import Any, Mapping, Sequence
 
 from fqv.domain.amplitudes import AmplitudeToken

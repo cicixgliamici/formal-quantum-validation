@@ -2,8 +2,8 @@
 
 Both command-line entry points call this module immediately after raw JSON is
 loaded. Executable verification sends the returned ``CheckedCircuitIr`` to the
-Qiskit converter; Lean generation uses successful validation as its trust
-boundary before formatting the original exact tokens.
+Qiskit converter; Lean and Coq generation use successful validation as their
+Python trust boundary before formatting the original exact tokens.
 """
 
 from __future__ import annotations

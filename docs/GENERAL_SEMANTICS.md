@@ -12,6 +12,10 @@ A basis assignment maps every qubit position to its Boolean value. Position
 zero is the least significant Qiskit qubit. A state maps each complete basis
 assignment to one complex amplitude.
 
+This document describes the native Lean model. The independent lowering to
+SQIR and its Coq well-typedness result are documented in
+[Coq and SQIR semantics](COQ_SQIR.md).
+
 ## Gate operands
 
 Single-qubit gates accept a target in `Fin n`. CNOT and SWAP additionally carry

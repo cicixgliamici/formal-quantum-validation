@@ -1,14 +1,14 @@
 """Formal Quantum Validation.
 
 The package root intentionally avoids eager Qiskit imports. Contract parsing
-and Lean generation must remain usable in lightweight formal-tooling jobs.
+and formal-obligation generation must remain usable in lightweight Lean or Coq
+tooling jobs.
 """
 
 from __future__ import annotations
 
 from importlib import import_module
 from typing import Any
-
 
 _PUBLIC_OBJECTS: dict[str, tuple[str, str]] = {
     "CheckResult": ("fqv.domain.reports", "CheckResult"),

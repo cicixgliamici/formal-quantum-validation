@@ -15,6 +15,20 @@ Definition ghz_three_qubit_preparation_input : Vector 8 :=
 Definition ghz_three_qubit_preparation_target : Vector 8 :=
   (/√2)%R .* ∣0, 0, 0⟩ .+ (/√2)%R .* ∣1, 1, 1⟩.
 
+Theorem ghz_three_qubit_preparation_circuit_well_formed :
+  circuit_well_formed ghz_three_qubit_preparation_circuit.
+Proof.
+  unfold ghz_three_qubit_preparation_circuit, circuit_well_formed, gate_well_formed.
+  repeat constructor; lia.
+Qed.
+
+Theorem ghz_three_qubit_preparation_circuit_compile_well_typed :
+  uc_well_typed (compile_circuit ghz_three_qubit_preparation_circuit).
+Proof.
+  apply circuit_well_formed_compile_preservation.
+  exact ghz_three_qubit_preparation_circuit_well_formed.
+Qed.
+
 Theorem ghz_three_qubit_preparation_correct :
   run ghz_three_qubit_preparation_circuit × ghz_three_qubit_preparation_input = ghz_three_qubit_preparation_target.
 Proof.

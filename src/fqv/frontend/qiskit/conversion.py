@@ -3,7 +3,7 @@
 The verification CLI calls this adapter after ``ir.validation``. Its result
 continues either to ``pipeline.verify`` or to ``pipeline.transpilation``.
 Keeping both directions outside the core IR prevents Qiskit from becoming a
-dependency of validation and Lean generation.
+dependency of validation and Lean or Coq generation.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ def checked_ir_to_qiskit(circuit: CheckedCircuitIr) -> QuantumCircuit:
     Example: JSON {"gate": "CNOT", "controls": [0], "targets": [1]}
     crosses check_ir as CheckedOperation(GateName.CNOT, (1,), (0,)). This
     function appends result.cx(0, 1), then verify_contract evolves that circuit
-    from the contract's input state. The separate Lean path formats the same
-    checked operation as `.cnot 0 1 (by decide)`; it does not call this adapter.
+    from the contract's input state. The formal generators instead serialize
+    the same checked operation in Lean or Coq syntax; they do not call this adapter.
     """
 
     result = QuantumCircuit(circuit.num_qubits, name=circuit.name)

@@ -70,9 +70,9 @@ class CheckedCircuitIr:
     the input to future lowering and certificate-generation stages.
 
     Data path: load_raw_ir -> check_ir -> CheckedCircuitIr. The executable
-    path consumes it in checked_ir_to_qiskit; the formal path consumes its
-    operations in generate_lean_module. Serialization can return it to JSON,
-    but that JSON must cross check_ir again when read as external input.
+    path consumes it in checked_ir_to_qiskit; the Lean and Coq generators
+    consume its operations along the formal paths. Serialization can return it
+    to JSON, but that JSON must cross check_ir again when read as external input.
     Structural validity alone says nothing about the desired output state.
     """
 

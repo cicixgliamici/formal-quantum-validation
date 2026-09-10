@@ -15,6 +15,20 @@ Definition deutsch_jozsa_two_bit_balanced_input : Vector 8 :=
 Definition deutsch_jozsa_two_bit_balanced_target : Vector 8 :=
   (/√2)%R .* ∣1, 0, 0⟩ .+ (- /√2)%R .* ∣1, 0, 1⟩.
 
+Theorem deutsch_jozsa_two_bit_balanced_circuit_well_formed :
+  circuit_well_formed deutsch_jozsa_two_bit_balanced_circuit.
+Proof.
+  unfold deutsch_jozsa_two_bit_balanced_circuit, circuit_well_formed, gate_well_formed.
+  repeat constructor; lia.
+Qed.
+
+Theorem deutsch_jozsa_two_bit_balanced_circuit_compile_well_typed :
+  uc_well_typed (compile_circuit deutsch_jozsa_two_bit_balanced_circuit).
+Proof.
+  apply circuit_well_formed_compile_preservation.
+  exact deutsch_jozsa_two_bit_balanced_circuit_well_formed.
+Qed.
+
 Theorem deutsch_jozsa_two_bit_balanced_correct :
   run deutsch_jozsa_two_bit_balanced_circuit × deutsch_jozsa_two_bit_balanced_input = deutsch_jozsa_two_bit_balanced_target.
 Proof.

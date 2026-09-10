@@ -16,8 +16,8 @@ from typing import Any, Mapping
 from fqv.domain.amplitudes import decode_amplitude
 from fqv.domain.contract_validation import (
     InvalidContractError,
-    require_mapping,
     require_fields,
+    require_mapping,
     require_nonnegative_number,
     require_number_in_unit_interval,
 )

@@ -13,13 +13,12 @@ from qiskit.quantum_info import Operator, Statevector
 from fqv.backend.lean.generator import generate_lean_module
 from fqv.domain.contract_validation import InvalidContractError
 from fqv.frontend.qiskit.circuits import (
-    build_ghz_circuit,
     build_ghz3_circuit,
+    build_ghz_circuit,
 )
 from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
 from fqv.frontend.qiskit.extraction import circuit_to_ir
 from fqv.ir.validation import InvalidIrError, check_ir
-
 
 PROJECT_ROOT = Path(__file__).parents[1]
 GHZ_IR_PATH = PROJECT_ROOT / "examples" / "ghz3_ir.json"

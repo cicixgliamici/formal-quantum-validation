@@ -1,7 +1,7 @@
 # Circuit IR conventions
 
 The circuit IR is the explicit boundary between Qiskit extraction and the
-Lean semantics. Version `0.1` supports only finite unitary circuits.
+Lean and Coq/SQIR semantics. Version `0.1` supports only finite unitary circuits.
 
 ## Supported fragment
 
@@ -25,8 +25,8 @@ corresponding mathematical order.
 
 Qubit indices follow Qiskit's little-endian convention. For two qubits, the
 statevector basis order is `|00>`, `|01>`, `|10>`, `|11>`, where qubit zero is
-the least significant bit. The Lean semantics must document and test the same
-choice.
+the least significant bit. Both formal backends document and test the same
+choice; the Coq serializer writes bit `k` in QuantumLib ket position `k`.
 
 ## Gate operands
 

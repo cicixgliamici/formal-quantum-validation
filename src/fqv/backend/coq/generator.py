@@ -7,9 +7,9 @@ using the circuit abstraction in QuantumValidation.Circuit and Dirac notation.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from typing import Any, Mapping, Sequence
 
 from fqv.domain.amplitudes import AmplitudeToken
@@ -186,6 +186,20 @@ Definition {input_name} : Vector {vector_dim} :=
 
 Definition {target_name} : Vector {vector_dim} :=
   {target_expr}.
+
+Theorem {circuit_name}_well_formed :
+  circuit_well_formed {circuit_name}.
+Proof.
+  unfold {circuit_name}, circuit_well_formed, gate_well_formed.
+  repeat constructor; lia.
+Qed.
+
+Theorem {circuit_name}_compile_well_typed :
+  uc_well_typed (compile_circuit {circuit_name}).
+Proof.
+  apply circuit_well_formed_compile_preservation.
+  exact {circuit_name}_well_formed.
+Qed.
 
 Theorem {theorem_name} :
   run {circuit_name} × {input_name} = {target_name}.

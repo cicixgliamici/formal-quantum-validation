@@ -16,7 +16,6 @@ from qiskit.quantum_info import Operator, process_fidelity
 
 from fqv.domain.reports import EquivalenceReport
 
-
 DEFAULT_BASIS_GATES = (
     "id",
     "x",
