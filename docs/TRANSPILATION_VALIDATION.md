@@ -21,6 +21,8 @@ The pipeline records:
 
 The default gate basis matches IR version `0.1`. This allows a successful
 logical transpilation to continue through the existing IR-to-Lean pipeline.
+Export additionally requires zero stored global phase and no attached layout.
+A phase-insensitive equivalence PASS does not waive these exact IR restrictions.
 Hardware-native bases containing parameterized rotations are not yet accepted
 by the formal IR.
 

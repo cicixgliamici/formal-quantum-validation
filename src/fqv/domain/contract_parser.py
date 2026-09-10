@@ -9,6 +9,7 @@ checks consume that object next and never parse JSON themselves.
 from __future__ import annotations
 
 import json
+from math import fsum, isclose
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -16,6 +17,7 @@ from fqv.domain.amplitudes import decode_amplitude
 from fqv.domain.contract_validation import (
     InvalidContractError,
     require_mapping,
+    require_fields,
     require_nonnegative_number,
     require_number_in_unit_interval,
 )
@@ -57,6 +59,11 @@ def _decode_state(
             raise InvalidContractError(
                 f"{field_name}[{index}] uses unsupported amplitude {token!r}"
             ) from error
+    # Only floating-point decoding error is tolerated; never normalize an
+    # invalid specification silently, since Lean receives the original tokens.
+    norm_squared = fsum(abs(amplitude) ** 2 for amplitude in amplitudes)
+    if not isclose(norm_squared, 1.0, rel_tol=0.0, abs_tol=1e-12):
+        raise InvalidContractError(f"{field_name} must be normalized")
     return tuple(amplitudes)
 
 
@@ -77,6 +84,11 @@ def _parse_expectations(
     for index, raw_value in enumerate(values):
         value = require_mapping(
             raw_value,
+            field_name=f"probabilities[{index}]",
+        )
+        require_fields(
+            value, required={"outcome", "expected"},
+            optional={"exact_tolerance", "sampled_tolerance"},
             field_name=f"probabilities[{index}]",
         )
         outcome = value.get("outcome")
@@ -146,6 +158,14 @@ def contract_from_dict(data: Mapping[str, Any]) -> QuantumContract:
     from verification failures during a presentation or experiment.
     """
 
+    data = require_mapping(data, field_name="contract")
+    require_fields(
+        data,
+        required={"schema_version", "name", "qubits", "resources",
+                  "initial_state", "target_state", "fidelity_threshold",
+                  "probabilities"},
+        field_name="contract",
+    )
     if data.get("schema_version") != "0.1":
         raise InvalidContractError(
             "only contract schema version '0.1' is supported"
@@ -164,6 +184,10 @@ def contract_from_dict(data: Mapping[str, Any]) -> QuantumContract:
 
     resources = require_mapping(
         data.get("resources"),
+        field_name="resources",
+    )
+    require_fields(
+        resources, required={"gate_counts", "allow_extra_gates"},
         field_name="resources",
     )
     allow_extra_gates = resources.get("allow_extra_gates", False)

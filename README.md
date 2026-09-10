@@ -22,8 +22,12 @@ fqv-verify `
 
 Run all checks:
 
+Use the Python 3.12.10 environment described in
+[development](docs/DEVELOPMENT.md), with `constraints-python312.txt` applied.
+
 ```powershell
 python -m pytest
+python -m pip check
 lake build
 ```
 

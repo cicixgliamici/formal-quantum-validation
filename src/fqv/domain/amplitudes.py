@@ -7,7 +7,14 @@ from math import sqrt
 
 
 class AmplitudeToken(StrEnum):
-    """Amplitude values admitted by contract schema version 0.1."""
+    """Amplitude values admitted by contract schema version 0.1.
+
+    JSON stores the string token. contract_parser calls decode_amplitude for
+    Python simulation, while backend.lean.generator maps the original string
+    to an exact Lean expression. For example, "inv_sqrt_two" becomes a rounded
+    complex number here and the mathematical inverse square root in Lean.
+    Extending this enum also requires updating the schema and Lean mapping.
+    """
 
     ZERO = "zero"
     ONE = "one"

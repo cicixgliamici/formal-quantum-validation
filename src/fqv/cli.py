@@ -16,6 +16,7 @@ from pathlib import Path
 
 from fqv.domain.contract_parser import load_contract
 from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
+from fqv.frontend.qiskit.circuits import bell_contract, build_bell_circuit
 from fqv.frontend.qiskit.extraction import export_ir
 from fqv.frontend.qiskit.verification import verify_contract
 from fqv.ir.raw import load_raw_ir
@@ -36,14 +37,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--ir",
         type=Path,
-        default=Path("examples/bell_ir.json"),
-        help="source circuit IR",
+        default=None,
+        help="source circuit IR (default: packaged Bell example)",
     )
     parser.add_argument(
         "--contract",
         type=Path,
-        default=Path("src/fqv/data/bell.contract.json"),
-        help="executable quantum contract",
+        default=None,
+        help="executable quantum contract (default: packaged Bell contract)",
     )
     parser.add_argument("--shots", type=int, default=4096)
     parser.add_argument("--seed", type=int, default=7)
@@ -92,17 +93,19 @@ def main() -> int:
     """
 
     args = build_parser().parse_args()
-    # Input path: raw.py reads JSON, validation.py creates trusted core IR,
-    # and conversion.py is the first layer allowed to construct Qiskit data.
-    # Raw JSON has no trusted meaning until `check_ir` returns successfully.
-    checked_ir = check_ir(load_raw_ir(args.ir))
-    circuit = checked_ir_to_qiskit(checked_ir)
-    contract = load_contract(args.contract)
+    # Explicit input: raw.py loads JSON -> check_ir validates and freezes its
+    # operations -> checked_ir_to_qiskit constructs the executable circuit.
+    # With no path, the packaged Bell constructor provides the reference circuit
+    # directly, so the installed command also works outside the checkout.
+    circuit = build_bell_circuit()
+    if args.ir is not None:
+        circuit = checked_ir_to_qiskit(check_ir(load_raw_ir(args.ir)))
+    contract = bell_contract() if args.contract is None else load_contract(args.contract)
     # Detect the cross-document mismatch before Qiskit reports a lower-level
     # statevector dimension error.
-    if checked_ir.num_qubits != contract.num_qubits:
+    if circuit.num_qubits != contract.num_qubits:
         raise ValueError(
-            f"circuit has {checked_ir.num_qubits} qubits but contract "
+            f"circuit has {circuit.num_qubits} qubits but contract "
             f"requires {contract.num_qubits}"
         )
     # Control passes through the provider-neutral pipeline boundary before
@@ -122,8 +125,9 @@ def main() -> int:
 
     equivalence_passed = True
     if args.transpile:
-        # This optional branch returns here after transpiling and comparing the
-        # complete operators; extraction.py then serializes the checked result.
+        # This branch compares complete operators, independently of the source
+        # contract's one input state. Export then checks exact IR restrictions:
+        # a numerical PASS up to phase does not make phase/layout exportable.
         transpiled, equivalence = transpile_and_check(
             circuit,
             config=TranspilationConfig(
@@ -144,4 +148,6 @@ def main() -> int:
     if args.json_report is not None:
         _write_report(args.json_report, report)
 
+    # This exit code combines executable verdicts only. Neither this command
+    # nor JSON report serialization invokes Lean or claims a formal certificate.
     return 0 if report.passed and equivalence_passed else 1

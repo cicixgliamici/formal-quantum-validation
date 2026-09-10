@@ -25,6 +25,17 @@ class InvalidIrError(ValueError):
     """
 
 
+def _fields(data: Mapping[str, Any], expected: set[str], prefix: str) -> None:
+    """Match the closed JSON schema before interpreting any gate operands."""
+    missing = expected - data.keys()
+    unexpected = data.keys() - expected
+    if missing or unexpected:
+        raise InvalidIrError(
+            f"{prefix}: missing fields {sorted(missing)}, "
+            f"unexpected fields {sorted(unexpected, key=str)}"
+        )
+
+
 def _index(value: object, *, qubits: int, field_name: str) -> int:
     """Accept an integer only when it denotes an existing logical qubit."""
     if (
@@ -83,6 +94,11 @@ def _operation(
         raise InvalidIrError(
             f"{prefix} uses unsupported gate {gate_value!r}"
         ) from error
+
+    expected = {"gate", "targets"}
+    if gate is GateName.CNOT:
+        expected.add("controls")
+    _fields(raw, expected, prefix)
 
     # Single-qubit gates share the same shape and need no control operands.
     if gate in {
@@ -148,6 +164,9 @@ def check_ir(data: Mapping[str, Any]) -> CheckedCircuitIr:
     research roadmap.
     """
 
+    if not isinstance(data, dict):
+        raise InvalidIrError("circuit IR must be a JSON object")
+    _fields(data, {"schema_version", "name", "qubits", "operations"}, "circuit IR")
     if data.get("schema_version") != "0.1":
         raise InvalidIrError(
             "only circuit IR schema version '0.1' is supported"

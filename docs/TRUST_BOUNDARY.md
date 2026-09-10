@@ -18,7 +18,7 @@ in the pipeline.
 - Lean's kernel and the definitions imported from mathlib
 - The mathematical definitions in `QuantumValidation.Circuit`
 - The Qiskit-to-IR extractor
-- The future IR-to-Lean translator
+- The IR-to-Lean translator
 - The claim that the chosen gate formulas model Qiskit correctly
 - The Python interpreter, Qiskit implementation, operating system, and
   hardware used for executable experiments
@@ -38,8 +38,13 @@ families require reusable semantic lemmas and induction.
 
 Milestone 3 generates the formal circuit, input state, target state, and
 theorem statement from versioned JSON. Lean still checks the resulting proof.
-CI regenerates the Bell module and rejects drift between source data and the
+CI regenerates the Bell and GHZ(3) modules and rejects drift between source data and the
 committed generated artifact.
+
+Generated equality includes global phase. The executable state contract uses
+the same convention with a numerical roundoff tolerance; the separate operator
+equivalence report remains explicitly phase-insensitive. Neither report proves
+the Python translator correct.
 
 The generator remains trusted to preserve the meaning of IR and contract
 fields. Its validation and regression tests reduce this risk but do not turn
@@ -56,9 +61,19 @@ Qiskit, NumPy, the selected transpiler passes, and the numerical equivalence
 threshold remain trusted. Lean does not currently certify that Qiskit's
 transpiler preserves semantics.
 
-## Required validation
+## Cross-system semantic regression
 
-The next integration step must compare every formal gate against Qiskit's
-statevector behavior on all computational-basis inputs. Those tests reduce the
-risk of an ordering or operand-mapping error, but they do not remove the
-extractor and semantic definitions from the trusted computing base.
+`integration_tests/test_gate_semantics.py` compares every supported gate with
+Qiskit on every computational-basis input for registers of one, two, and three
+qubits. It covers every valid operand placement, including reversed CNOT roles,
+both SWAP orders, non-adjacent operands, and spectator qubits: 248 cases in all.
+
+Qiskit computes the expected amplitudes. The production extractor and generator
+translate each circuit and target, then `lake env lean` checks the resulting
+theorems against the formal gate semantics. A normalized target with one
+deliberately incorrect branch sign must be rejected by Lean. Missing tooling
+or compiler errors fail the integration suite rather than silently skipping it.
+
+This is a finite regression test across two systems, not a formal equivalence
+proof for arbitrary register sizes or a verification of Qiskit, the extractor,
+or the generator. These components remain in the trusted computing base.

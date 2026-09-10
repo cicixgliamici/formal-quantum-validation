@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "formal-quantum-validation"
 version = "0.1.0"
-description = "MVP 0: multi-level validation of Bell-state preparation"
+description = "Executable and formal validation of restricted unitary quantum circuits"
 # Python 3.12 is the shared development and CI baseline.
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
-    # Exact direct dependencies make experimental results reproducible.
+    # Pin direct dependencies; transitive versions are recorded separately.
     "numpy==2.3.5",
     "qiskit==2.4.0"
 ]

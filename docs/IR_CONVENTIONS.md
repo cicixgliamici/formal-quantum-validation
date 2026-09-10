@@ -1,7 +1,7 @@
 # Circuit IR conventions
 
 The circuit IR is the explicit boundary between Qiskit extraction and the
-future Lean semantics. Version `0.1` supports only finite unitary circuits.
+Lean semantics. Version `0.1` supports only finite unitary circuits.
 
 ## Supported fragment
 
@@ -13,6 +13,9 @@ future Lean semantics. Version `0.1` supports only finite unitary circuits.
 
 Unsupported operations must cause extraction to fail. They must never be
 silently approximated or omitted.
+Nonzero or symbolic stored global phase and attached transpiler layouts are
+also rejected. Exact export requires an explicit representation or logical
+remapping for these features. Unknown JSON fields are rejected at every level.
 
 ## Ordering
 
@@ -45,7 +48,8 @@ tests deterministic.
 
 ## Semantic scope
 
-Version `0.1` does not encode an initial state, expected output, global phase,
-resource bound, or measurement property. Those belong to a separate contract
-format. Keeping circuits and specifications separate prevents structural data
-from being mistaken for a correctness claim.
+Version `0.1` does not encode an initial state, expected output, resource bound,
+or measurement property. Those belong to a separate contract format. A stored
+global phase is unsupported, rather than being transferred to the contract.
+Keeping circuits and specifications separate prevents structural data from
+being mistaken for a correctness claim.

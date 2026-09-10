@@ -10,7 +10,13 @@ from fqv.ir.checked import CheckedCircuitIr, GateName
 
 
 def checked_ir_to_dict(circuit: CheckedCircuitIr) -> dict[str, Any]:
-    """Return the canonical raw representation of checked IR."""
+    """Return the canonical raw representation of checked IR.
+
+    This direction starts from CheckedCircuitIr, unlike Qiskit's circuit_to_ir
+    extractor, which starts from an external QuantumCircuit. Both produce the
+    same JSON shape. Returning fresh dictionaries avoids exposing the checked
+    tuples to mutation; operation order remains semantically significant.
+    """
 
     operations: list[dict[str, Any]] = []
     for operation in circuit.operations:

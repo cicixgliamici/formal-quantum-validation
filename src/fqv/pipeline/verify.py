@@ -20,6 +20,11 @@ class ContractVerifier(Protocol):
     The pipeline knows the domain contract and report but not the concrete
     circuit provider. Qiskit satisfies this protocol today; another simulator
     can be injected later without changing orchestration policy.
+
+    cli.main passes the verify_contract function as the `verifier` argument;
+    callers do not instantiate this Protocol. `circuit: object` intentionally
+    hides the provider type here. The injected adapter must understand that
+    object, validate its inputs, run the checks, and return the domain report.
     """
 
     def __call__(

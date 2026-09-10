@@ -29,12 +29,20 @@ def verify_contract(
 ) -> VerificationReport:
     """Run all executable checks supported by the Qiskit frontend."""
 
-    if shots <= 0:
-        raise ValueError("shots must be strictly positive")
+    if type(shots) is not int or shots <= 0:
+        raise ValueError("shots must be a strictly positive integer")
+    if type(seed) is not int or seed < 0:
+        raise ValueError("seed must be a non-negative integer")
+    # Library callers need the same early dimension diagnostic as CLI callers.
+    if circuit.num_qubits != contract.num_qubits:
+        raise ValueError("circuit and contract must have the same qubit count")
 
     report = VerificationReport(contract_name=contract.name)
-    # Structure must be checked before simulation. The state check then
-    # produces the Statevector consumed by both probability checks.
+    # All checks append to the same report. A failed gate-count check does not
+    # stop simulation: later checks still provide useful diagnostics. Invalid
+    # input data, such as an unnormalized state, raises instead of returning a
+    # completed report. The state is evolved once and reused by both probability
+    # checks; the sampled check samples that ideal vector, not a physical device.
     check_structure(circuit, contract, report)
     state = check_target_state(circuit, contract, report)
     check_exact_probabilities(state, contract, report)

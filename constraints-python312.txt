@@ -1,0 +1,16 @@
+# Tested dependency constraints for Python 3.12.10.
+# Install with: python -m pip install -c constraints-python312.txt -e ".[dev]"
+# Colorama is only required by pytest on Windows.
+Pygments==2.21.0
+colorama==0.4.6; sys_platform == "win32"
+dill==0.4.1
+iniconfig==2.3.0
+numpy==2.3.5
+packaging==26.3
+pluggy==1.6.0
+pytest==8.4.2
+qiskit==2.4.0
+rustworkx==0.18.1
+scipy==1.18.1
+stevedore==5.9.1
+typing_extensions==4.16.0

@@ -20,6 +20,12 @@ def checked_ir_to_qiskit(circuit: CheckedCircuitIr) -> QuantumCircuit:
     This adapter is deliberately mechanical: validation belongs to the IR
     layer, while provider-specific gate construction belongs here. Keeping the
     mapping small makes bit ordering and gate-name decisions reviewable.
+
+    Example: JSON {"gate": "CNOT", "controls": [0], "targets": [1]}
+    crosses check_ir as CheckedOperation(GateName.CNOT, (1,), (0,)). This
+    function appends result.cx(0, 1), then verify_contract evolves that circuit
+    from the contract's input state. The separate Lean path formats the same
+    checked operation as `.cnot 0 1 (by decide)`; it does not call this adapter.
     """
 
     result = QuantumCircuit(circuit.num_qubits, name=circuit.name)

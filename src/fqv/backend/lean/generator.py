@@ -15,6 +15,7 @@ from typing import Any, Mapping, Sequence
 
 from fqv.domain.contract_parser import contract_from_dict
 from fqv.domain.contract_validation import InvalidContractError
+from fqv.ir.checked import CheckedOperation
 from fqv.ir.validation import InvalidIrError, check_ir
 
 
@@ -43,6 +44,12 @@ class GeneratedLeanModule:
 
     Returning source as data keeps generation testable without writing files.
     File output is a separate responsibility handled by `write_lean_module`.
+
+    generate_lean_module returns this object after assembling definitions and
+    a theorem body. `source` is a proof obligation until Lean accepts it;
+    generating or saving the string does not certify correctness. The CLI
+    writes it, then `lake build` checks imported project modules. Integration
+    tests instead use `lake env lean` on temporary generated obligations.
     """
 
     source: str
@@ -136,7 +143,7 @@ def _format_state(
     return f"fun basis => {expression}"
 
 
-def _format_gate(operation: Mapping[str, Any]) -> str:
+def _format_gate(operation: CheckedOperation) -> str:
     """Translate one validated IR operation to general Lean gate syntax.
 
     Distinct CNOT and SWAP operands were checked at the Python boundary. Lean
@@ -144,8 +151,8 @@ def _format_gate(operation: Mapping[str, Any]) -> str:
     that the concrete generated operands differ.
     """
 
-    gate = operation["gate"]
-    targets = operation.get("targets", [])
+    gate = operation.gate
+    targets = operation.targets
 
     if gate == "I":
         return f".identity {targets[0]}"
@@ -153,7 +160,7 @@ def _format_gate(operation: Mapping[str, Any]) -> str:
         return f".{gate.lower()} {targets[0]}"
     if gate == "CNOT":
         return (
-            f".cnot {operation['controls'][0]} "
+            f".cnot {operation.controls[0]} "
             f"{targets[0]} (by decide)"
         )
     if gate == "SWAP":
@@ -176,17 +183,23 @@ def generate_lean_module(
     inputs and generated source.
     """
 
-    check_ir(ir)
+    checked_ir = check_ir(ir)
 
     # Report the boundary mismatch before parsing dimension-dependent fields.
     # This produces the most actionable diagnostic for pipeline users.
-    if ir["qubits"] != contract_data.get("qubits"):
+    if not isinstance(contract_data, dict):
+        raise InvalidContractError("contract must be a JSON object")
+    if checked_ir.num_qubits != contract_data.get("qubits"):
         raise InvalidContractError(
-            f"circuit has {ir['qubits']} qubits but contract "
+            f"circuit has {checked_ir.num_qubits} qubits but contract "
             f"requires {contract_data.get('qubits')}"
         )
 
     contract = contract_from_dict(contract_data)
+
+    # Parsing checks dimensions, normalization, and schema fields. The typed
+    # IR drives gate translation, while validated raw amplitude tokens below
+    # retain exact constants that the parsed floating-point states would lose.
 
     prefix = _lean_identifier(contract.name)
     circuit_name = f"generated{prefix}Circuit"
@@ -198,7 +211,7 @@ def generate_lean_module(
     # semantic generator defect, so regression tests compare complete source.
     gates = ", ".join(
         _format_gate(operation)
-        for operation in ir["operations"]
+        for operation in checked_ir.operations
     )
     initial_state = _format_state(
         contract_data["initial_state"],
@@ -229,19 +242,25 @@ Regenerate this module instead of editing it by hand.
 namespace QuantumValidation
 namespace General
 
+/-- Gate order is copied from the validated circuit IR. -/
 def {circuit_name} : Circuit {contract.num_qubits} :=
   [{gates}]
 
+/-- Exact input amplitudes in little-endian basis order. -/
 noncomputable def {input_name} : State {contract.num_qubits} :=
   {initial_state}
 
+/-- Exact target amplitudes; global phase is part of the specification. -/
 noncomputable def {target_name} : State {contract.num_qubits} :=
   {target_state}
 
+/-- This obligation proves state preparation, not resource or sampling fields. -/
 theorem {theorem_name} :
     denote {circuit_name} {input_name} = {target_name} := by
   classical
+  -- Function extensionality reduces state equality to amplitudes.
   funext basis
+  -- Exhaustive basis cases are intended only for small fixed-size circuits.
   {basis_cases} <;>
     simp [
       denote,
@@ -272,7 +291,7 @@ def write_lean_module(
     """Write generated Lean source using deterministic UTF-8 output."""
 
     output_path = Path(destination)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     module = generate_lean_module(ir, contract_data)
-    output_path.write_text(module.source, encoding="utf-8")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(module.source, encoding="utf-8", newline="\n")
     return output_path

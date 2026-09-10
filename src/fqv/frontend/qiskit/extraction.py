@@ -38,6 +38,16 @@ def circuit_to_ir(circuit: QuantumCircuit) -> dict[str, Any]:
     frontend is therefore part of the bit-ordering trust boundary.
     """
 
+    # IR 0.1 has exact vector semantics and no phase field. Reject rather than
+    # silently producing a different operator, even for a tiny stored phase.
+    if circuit.global_phase != 0:
+        raise UnsupportedCircuitError("Global phase is outside exact IR 0.1")
+    if circuit.layout is not None:
+        raise UnsupportedCircuitError(
+            "Layout-bearing circuits require logical remapping before IR export"
+        )
+    if circuit.num_qubits < 1:
+        raise UnsupportedCircuitError("IR 0.1 requires at least one qubit")
     operations: list[dict[str, Any]] = []
     for instruction in circuit.data:
         operation = instruction.operation

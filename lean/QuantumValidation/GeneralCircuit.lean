@@ -7,6 +7,14 @@ General finite pure-state semantics for the supported unitary circuit fragment.
 A computational-basis element is a Boolean assignment to `n` qubit positions.
 Position zero is the least significant Qiskit qubit. This representation keeps
 bit ordering explicit and avoids unchecked arithmetic conversions.
+
+Connection to the executable pipeline:
+`backend/lean/generator.py` turns checked IR operations into `Gate` constructors
+and exact contract tokens into `State` functions. Generated theorems invoke
+`denote`, which folds `Gate.apply` over the circuit in execution order.
+Lean checks these definitions directly; it does not execute Python or Qiskit.
+`integration_tests/test_gate_semantics.py` supplies Qiskit-observed targets for
+finite basis cases and asks Lean to check the resulting equalities here.
 -/
 
 namespace QuantumValidation
@@ -45,8 +53,9 @@ def flipBit {n : Nat} (
 /--
 The general gate syntax mirrors circuit IR version 0.1.
 
-Proof fields make malformed two-qubit operations unrepresentable after the
-Python boundary validator has accepted their operands.
+Python checks the same operand conditions before emitting these constructors,
+but Lean checks them independently: `Fin n` enforces register bounds and each
+`distinct` proof prevents a two-qubit gate from aliasing its own operands.
 -/
 inductive Gate (n : Nat) where
   | identity (target : Fin n)

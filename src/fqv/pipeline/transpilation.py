@@ -33,8 +33,15 @@ class TranspilationConfig:
 
     Qiskit's passes may contain stochastic choices, so the seed and pinned
     basis belong to the evidence rather than being incidental implementation
-    settings. The basis remains inside IR 0.1 so a successful result can still
-    be exported and consumed by the formal pipeline.
+    settings. The default basis remains inside IR 0.1. Exact export additionally
+    requires zero stored global phase and no attached layout.
+
+    cli.main constructs this from command-line flags and passes it to
+    transpile_and_check. That function uses the basis, optimization level,
+    and seed to call Qiskit; check_operator_equivalence uses the threshold.
+    The same settings are copied into EquivalenceReport for reproducibility.
+    Currently 1 - equivalence_threshold also bounds the phase-aligned maximum
+    entry error, so the threshold controls both numerical acceptance checks.
     """
 
     optimization_level: int = 1
@@ -45,13 +52,16 @@ class TranspilationConfig:
     def __post_init__(self) -> None:
         """Reject settings that would make reports ambiguous."""
 
-        if self.optimization_level not in range(4):
+        if (
+            type(self.optimization_level) is not int
+            or self.optimization_level not in range(4)
+        ):
             raise ValueError(
                 "optimization_level must be in [0, 3]"
             )
-        if self.seed_transpiler < 0:
+        if type(self.seed_transpiler) is not int or self.seed_transpiler < 0:
             raise ValueError(
-                "seed_transpiler must be non-negative"
+                "seed_transpiler must be a non-negative integer"
             )
         if not self.basis_gates:
             raise ValueError("basis_gates cannot be empty")
@@ -85,14 +95,17 @@ def _phase_aligned_error(
 
     # A nonzero source entry gives a stable phase reference. Dividing two
     # entries near zero would amplify numerical noise, so those are excluded.
-    significant = np.argwhere(np.abs(source) > tolerance)
-    if significant.size == 0:
+    # The largest entry is the most stable reference and argmax avoids an
+    # additional array of coordinates proportional to the full operator size.
+    row, column = np.unravel_index(np.argmax(np.abs(source)), source.shape)
+    if abs(source[row, column]) <= tolerance:
         return float(np.max(np.abs(candidate - source)))
 
-    row, column = significant[0]
     ratio = candidate[row, column] / source[row, column]
     if abs(ratio) <= tolerance:
-        return float("inf")
+        # A missing pivot already witnesses disagreement for every phase.
+        # Keep the diagnostic finite so it remains valid standard JSON.
+        return float(np.max(np.abs(candidate - source)))
 
     # Only one common phase is unobservable. Relative phases remain visible in
     # the entry-wise error and therefore still cause verification to fail.

@@ -10,7 +10,13 @@ permissions:
 jobs:
   python:
     name: Python checks
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Check out the repository
@@ -21,32 +27,42 @@ jobs:
         with:
           python-version-file: .python-version
           cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            constraints-python312.txt
 
       - name: Install the project
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -c constraints-python312.txt -e ".[dev]"
 
       - name: Run executable checks
         run: python -m pytest
+
+      - name: Check installed dependency compatibility
+        run: python -m pip check
+
+      - name: Check installed entry point outside the checkout
+        working-directory: ${{ runner.temp }}
+        run: fqv-verify
 
       - name: Regenerate the formal Bell obligation
         run: >-
           python -m fqv.generate_cli
           examples/bell_ir.json
           src/fqv/data/bell.contract.json
-          /tmp/GeneratedBell.lean
+          "${{ runner.temp }}/GeneratedBell.lean"
 
       - name: Regenerate the formal GHZ obligation
         run: >-
           python -m fqv.generate_cli
           examples/ghz3_ir.json
           src/fqv/data/ghz3.contract.json
-          /tmp/GeneratedGhz3.lean
+          "${{ runner.temp }}/GeneratedGhz3.lean"
 
       # Generated proof obligations must remain traceable to committed inputs.
       - name: Check generated Lean source for drift
         run: |
-          diff -u lean/QuantumValidation/GeneratedBell.lean /tmp/GeneratedBell.lean
-          diff -u lean/QuantumValidation/GeneratedGhz3.lean /tmp/GeneratedGhz3.lean
+          diff -u lean/QuantumValidation/GeneratedBell.lean "${{ runner.temp }}/GeneratedBell.lean"
+          diff -u lean/QuantumValidation/GeneratedGhz3.lean "${{ runner.temp }}/GeneratedGhz3.lean"
 
   lean:
     name: Lean checks
@@ -59,3 +75,19 @@ jobs:
       # The action reads lean-toolchain and caches matching Lake dependencies.
       - name: Build the formal development
         uses: leanprover/lean-action@v1
+
+      - name: Install Python for cross-system semantic checks
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            constraints-python312.txt
+
+      - name: Install the semantic test dependencies
+        run: python -m pip install -c constraints-python312.txt -e ".[dev]"
+
+      # These tests invoke Lean on Qiskit-derived targets, not just generated text.
+      - name: Compare every supported gate with Qiskit on basis inputs
+        run: python -m pytest integration_tests -v

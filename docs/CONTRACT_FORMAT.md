@@ -23,6 +23,22 @@ theorem.
 
 Each state must contain exactly `2 ^ qubits` amplitudes. Version `0.1` does not
 yet provide a general expression language for arbitrary algebraic amplitudes.
+Both states must be normalized. The parser allows at most `1e-12` absolute
+roundoff error in the squared norm; it never rescales the supplied state.
+Unknown fields and non-finite tolerances are rejected.
+
+## Equality and global phase
+
+The target denotes an exact vector, including global phase, as in the generated
+Lean equality. Python checks amplitude agreement with absolute tolerance `1e-12`
+and additionally enforces `fidelity_threshold`. Fidelity alone is insufficient:
+vectors differing only by global phase have fidelity one but fail this contract.
+
+The separate transpilation report explicitly compares operators *up to global
+phase*. Passing that numerical comparison does not establish the exact-vector
+contract and does not guarantee that the transpiled circuit can be exported.
+IR 0.1 export rejects nonzero or symbolic stored global phase and attached
+layouts because neither can be preserved by the current representation.
 
 ## Contract sections
 

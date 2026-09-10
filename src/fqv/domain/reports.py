@@ -14,6 +14,10 @@ class CheckResult:
     `details` is intended for a reviewer reading terminal output. `data` keeps
     the same evidence machine-readable for CI, experiments, and future report
     schema versioning.
+
+    A frontend check computes the verdict and constructs this object; it then
+    calls VerificationReport.add. Serialization preserves the computed result
+    and never reruns the check. This is executable evidence, not a Lean proof.
     """
 
     name: str
@@ -34,6 +38,12 @@ class VerificationReport:
     The report contains no verification policy beyond conjunction: it passes
     exactly when every recorded check passes. This makes the result easy to
     explain and prevents hidden success criteria inside the renderer.
+
+    verification.verify_contract creates one report and passes the same object
+    through structure, state, exact-probability, and sampling checks. The
+    pipeline returns it to cli.main, which renders it and selects an exit code.
+    An empty report has a vacuously true `passed` property; only a completed
+    verification workflow supplies the obligations needed for a useful verdict.
     """
 
     contract_name: str
@@ -86,6 +96,13 @@ class EquivalenceReport:
     This is executable evidence produced by Qiskit and NumPy, not a formal
     proof. The report records both a global-phase-independent fidelity and a
     directly interpretable phase-aligned matrix error.
+
+    pipeline.transpilation.check_operator_equivalence constructs this after
+    Qiskit builds both complete operators. cli.main consumes its verdict and
+    optionally writes JSON. Gate counts and depths describe the compared
+    circuits, not a proof that the chosen optimization is optimal. A PASS
+    allows global phase and therefore does not imply exact IR exportability
+    or satisfaction of the separate exact-vector state contract.
     """
 
     passed: bool

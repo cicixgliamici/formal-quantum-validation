@@ -1,0 +1,3 @@
+# Generated proof comparisons must use identical line endings on Windows and Linux.
+* text=auto
+*.lean text eol=lf
