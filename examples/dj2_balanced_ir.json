@@ -1,0 +1,52 @@
+{
+  "name": "dj2_balanced",
+  "operations": [
+    {
+      "gate": "X",
+      "targets": [
+        2
+      ]
+    },
+    {
+      "gate": "H",
+      "targets": [
+        0
+      ]
+    },
+    {
+      "gate": "H",
+      "targets": [
+        1
+      ]
+    },
+    {
+      "gate": "H",
+      "targets": [
+        2
+      ]
+    },
+    {
+      "controls": [
+        0
+      ],
+      "gate": "CNOT",
+      "targets": [
+        2
+      ]
+    },
+    {
+      "gate": "H",
+      "targets": [
+        0
+      ]
+    },
+    {
+      "gate": "H",
+      "targets": [
+        1
+      ]
+    }
+  ],
+  "qubits": 3,
+  "schema_version": "0.1"
+}

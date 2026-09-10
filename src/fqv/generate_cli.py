@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from fqv.backend.coq.generator import write_coq_module
 from fqv.backend.lean.generator import write_lean_module
 from fqv.ir.raw import load_raw_ir
 from fqv.ir.validation import check_ir
@@ -32,22 +33,28 @@ def _load_json_object(path: Path) -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Describe the three explicit artifacts used by Lean generation."""
+    """Describe the explicit artifacts used by proof generation."""
 
     parser = argparse.ArgumentParser(
         description=(
-            "Generate a Lean proof obligation from circuit IR "
+            "Generate a Lean or Coq proof obligation from circuit IR "
             "and a shared contract."
         )
     )
     parser.add_argument("ir", type=Path)
     parser.add_argument("contract", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--backend",
+        choices=["lean", "coq"],
+        default="lean",
+        help="formal verification target (default: lean)",
+    )
     return parser
 
 
 def main() -> int:
-    """Validate input documents and write one deterministic Lean module."""
+    """Validate input documents and write one deterministic proof module."""
 
     args = build_parser().parse_args()
     # Validate the shared IR before the backend sees it. The generator parses
@@ -55,15 +62,23 @@ def main() -> int:
     ir = load_raw_ir(args.ir)
     check_ir(ir)
     contract_data = _load_json_object(args.contract)
-    # Control now moves to backend/lean/generator.py and returns only after the
-    # deterministic source file has been written.
-    output = write_lean_module(
-        ir,
-        contract_data,
-        args.output,
-    )
-    print(f"Lean module written to: {output}")
+
+    if args.backend == "coq":
+        output = write_coq_module(
+            ir,
+            contract_data,
+            args.output,
+        )
+        print(f"Coq module written to: {output}")
+    else:
+        output = write_lean_module(
+            ir,
+            contract_data,
+            args.output,
+        )
+        print(f"Lean module written to: {output}")
     return 0
+
 
 
 if __name__ == "__main__":

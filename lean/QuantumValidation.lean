@@ -5,6 +5,9 @@ import QuantumValidation.GeneralUnitarity
 import QuantumValidation.ParametricGhz
 import QuantumValidation.GeneratedBell
 import QuantumValidation.GeneratedGhz3
+import QuantumValidation.GeneratedDj2Constant
+import QuantumValidation.GeneratedDj2Balanced
+import QuantumValidation.DeutschJozsa
 import QuantumValidation.RegressionTests
 import QuantumValidation.MatrixTests
 

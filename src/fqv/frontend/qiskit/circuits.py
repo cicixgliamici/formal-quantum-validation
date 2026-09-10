@@ -73,3 +73,43 @@ def ghz3_contract() -> QuantumContract:
     """Return the canonical fixed-size GHZ(3) contract."""
 
     return _packaged_contract("ghz3.contract.json")
+
+
+def build_dj2_constant_circuit() -> QuantumCircuit:
+    """Build the 2-bit query Deutsch-Jozsa circuit with constant f=0 oracle."""
+
+    circuit = QuantumCircuit(3, name="dj2_constant")
+    circuit.x(2)
+    circuit.h(0)
+    circuit.h(1)
+    circuit.h(2)
+    circuit.h(0)
+    circuit.h(1)
+    return circuit
+
+
+def build_dj2_balanced_circuit() -> QuantumCircuit:
+    """Build the 2-bit query Deutsch-Jozsa circuit with balanced f(x0,x1)=x0 oracle."""
+
+    circuit = QuantumCircuit(3, name="dj2_balanced")
+    circuit.x(2)
+    circuit.h(0)
+    circuit.h(1)
+    circuit.h(2)
+    circuit.cx(0, 2)
+    circuit.h(0)
+    circuit.h(1)
+    return circuit
+
+
+def dj2_constant_contract() -> QuantumContract:
+    """Return the canonical 2-bit Deutsch-Jozsa constant contract."""
+
+    return _packaged_contract("dj2_constant.contract.json")
+
+
+def dj2_balanced_contract() -> QuantumContract:
+    """Return the canonical 2-bit Deutsch-Jozsa balanced contract."""
+
+    return _packaged_contract("dj2_balanced.contract.json")
+

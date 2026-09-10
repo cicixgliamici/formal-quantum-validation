@@ -1,0 +1,44 @@
+{
+  "fidelity_threshold": 0.999999999999,
+  "initial_state": [
+    "one",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero",
+    "zero"
+  ],
+  "name": "Deutsch Jozsa two bit balanced",
+  "probabilities": [
+    {
+      "expected": 0.5,
+      "outcome": "001"
+    },
+    {
+      "expected": 0.5,
+      "outcome": "101"
+    }
+  ],
+  "qubits": 3,
+  "resources": {
+    "allow_extra_gates": false,
+    "gate_counts": {
+      "cx": 1,
+      "h": 5,
+      "x": 1
+    }
+  },
+  "schema_version": "0.1",
+  "target_state": [
+    "zero",
+    "inv_sqrt_two",
+    "zero",
+    "zero",
+    "zero",
+    "minus_inv_sqrt_two",
+    "zero",
+    "zero"
+  ]
+}
