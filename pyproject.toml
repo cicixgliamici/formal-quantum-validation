@@ -23,6 +23,7 @@ dev = [
 [project.scripts]
 fqv-verify = "fqv.cli:main"
 fqv-bell = "fqv.cli:main"
+fqv-generate = "fqv.generate_cli:main"
 fqv-generate-lean = "fqv.generate_cli:main"
 
 [tool.setuptools.packages.find]
@@ -33,4 +34,5 @@ fqv = ["data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+cache_dir = "build/.pytest_cache"
+addopts = "-q --basetemp=build/pytest_tmp"

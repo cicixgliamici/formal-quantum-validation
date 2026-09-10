@@ -3,15 +3,16 @@ import QuantumValidation.GeneratedDj2Constant
 import QuantumValidation.GeneratedDj2Balanced
 
 /-!
-Theoretical validation and algorithmic discrimination for 2-bit Deutsch-Jozsa.
+Output discrimination for two fixed two-query-qubit Deutsch-Jozsa examples.
 
-Deutsch-Jozsa demonstrates quantum advantage by deciding whether an oracle function
-`f : {0, 1}² → {0, 1}` is constant or balanced in a single quantum evaluation.
+The generated modules prove exact circuit-to-target equality for f = 0 and
+f(x0, x1) = x0. The lemmas below characterize those targets over `Basis 3`;
+they do not quantify over all constant or balanced oracles or prove query complexity.
 
-Methodological comparison:
-- In Lean 4, we evaluate the circuit directly over finite basis assignments (`Basis 3`).
-- For any constant oracle, the query qubits (indices 0 and 1) always evaluate to `false` (|00⟩).
-- For any balanced oracle, the amplitude of the all-zero query state (|00⟩) is strictly 0.
+Qubits 0 and 1 are queries, and qubit 2 is the ancilla. The constant target
+has support only on query 00; the balanced target has zero amplitude there.
+These asymmetric targets also exercise the basis-order convention that
+reversal-invariant Bell and GHZ targets cannot distinguish.
 -/
 
 namespace QuantumValidation

@@ -1,14 +1,13 @@
-From QuantumLib Require Import Complex Quantum.
-From SQIR Require Import UnitarySem.
-Open Scope ucom_scope.
+From QuantumValidation Require Import Circuit.
+Import QuantumValidationSQIR.
 
 (*!
 Generated from circuit IR and contract schema version 0.1.
 Regenerate this module instead of editing it by hand.
 *)
 
-Definition deutsch_jozsa_two_bit_constant_circuit : base_ucom 3 :=
-  X 2 ; H 0 ; H 1 ; H 2 ; H 0 ; H 1.
+Definition deutsch_jozsa_two_bit_constant_circuit : Circuit 3 :=
+  GateX 2 :: GateH 0 :: GateH 1 :: GateH 2 :: GateH 0 :: GateH 1 :: nil.
 
 Definition deutsch_jozsa_two_bit_constant_input : Vector 8 :=
   ∣0, 0, 0⟩.
@@ -17,13 +16,8 @@ Definition deutsch_jozsa_two_bit_constant_target : Vector 8 :=
   (/√2)%R .* ∣0, 0, 0⟩ .+ (- /√2)%R .* ∣0, 0, 1⟩.
 
 Theorem deutsch_jozsa_two_bit_constant_correct :
-  uc_eval deutsch_jozsa_two_bit_constant_circuit × deutsch_jozsa_two_bit_constant_input = deutsch_jozsa_two_bit_constant_target.
+  run deutsch_jozsa_two_bit_constant_circuit × deutsch_jozsa_two_bit_constant_input = deutsch_jozsa_two_bit_constant_target.
 Proof.
   unfold deutsch_jozsa_two_bit_constant_circuit, deutsch_jozsa_two_bit_constant_input, deutsch_jozsa_two_bit_constant_target.
-  simpl.
-  Msimpl.
-  autorewrite with eval_db.
-  solve_matrix.
-  (* Matrix reduction leaves exact scalar identities involving sqrt(2). *)
-  all: autorewrite with RtoC_db; Csimpl; C_field.
+  solve_circuit.
 Qed.

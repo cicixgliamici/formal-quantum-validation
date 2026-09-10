@@ -2,7 +2,7 @@
 
 This module mirrors the Lean backend generator, translating validated circuit IR
 and exact contract states into idiomatic Coq / SQIR definitions and theorems
-using QuantumLib's unitary semantics (`uc_eval`) and Dirac notation.
+using the circuit abstraction in QuantumValidation.Circuit and Dirac notation.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 from typing import Any, Mapping, Sequence
 
+from fqv.domain.amplitudes import AmplitudeToken
 from fqv.domain.contract_parser import contract_from_dict
 from fqv.domain.contract_validation import InvalidContractError
 from fqv.ir.checked import CheckedOperation
@@ -20,6 +21,17 @@ from fqv.ir.validation import InvalidIrError, check_ir
 
 class UnsupportedFormalizationError(ValueError):
     """Raised when valid shared input exceeds this backend's formal subset."""
+
+
+_COQ_SCALARS: dict[AmplitudeToken, str | None] = {
+    AmplitudeToken.ZERO: None,
+    AmplitudeToken.ONE: "",
+    AmplitudeToken.MINUS_ONE: "(- C1)%C .* ",
+    AmplitudeToken.INV_SQRT_TWO: "(/√2)%R .* ",
+    AmplitudeToken.MINUS_INV_SQRT_TWO: "(- /√2)%R .* ",
+    AmplitudeToken.I: "Ci .* ",
+    AmplitudeToken.MINUS_I: "(- Ci)%C .* ",
+}
 
 
 @dataclass(frozen=True)
@@ -48,31 +60,17 @@ def _coq_identifier(value: str) -> str:
 
 
 def _format_gate(operation: CheckedOperation) -> str:
-    """Translate one validated IR operation to SQIR base_ucom syntax.
-
-    In SQIR:
-    - Identity on qubit q is `ID q` (single-qubit identity on qubit q, defined as
-      `uapp1 (U_R 0 0 0) q`). `skip` is not an identity constructor for base_ucom.
-    - Sequential composition uses the `;` infix operator from `ucom_scope`.
-    - SWAP is decomposed into three CNOT gates: `CNOT t0 t1 ; CNOT t1 t0 ; CNOT t0 t1`.
-    """
+    """Serialize public gate constructors; Circuit.v owns their SQIR meanings."""
 
     gate = operation.gate
     targets = operation.targets
 
-    if gate == "I":
-        return f"ID {targets[0]}"
-    if gate == "X":
-        return f"X {targets[0]}"
-    if gate == "Z":
-        return f"Rz PI {targets[0]}"
-    if gate == "H":
-        return f"H {targets[0]}"
+    if gate in {"I", "X", "Z", "H"}:
+        return f"Gate{gate} {targets[0]}"
     if gate == "CNOT":
-        return f"CNOT {operation.controls[0]} {targets[0]}"
+        return f"GateCNOT {operation.controls[0]} {targets[0]}"
     if gate == "SWAP":
-        t0, t1 = targets[0], targets[1]
-        return f"CNOT {t0} {t1} ; CNOT {t1} {t0} ; CNOT {t0} {t1}"
+        return f"GateSWAP {targets[0]} {targets[1]}"
 
     raise InvalidIrError(f"unsupported gate {gate!r}")
 
@@ -91,12 +89,9 @@ def _format_state(
     Consequently, in Dirac notation ∣b_0, b_1, ..., b_{n-1}⟩, the k-th component
     corresponds directly to qubit k: b_k = (index >> k) & 1.
 
-    NOTE ON REVERSAL INVARIANCE:
-    We only noticed this endianness difference when introducing Deutsch-Jozsa,
-    because Bell (|00⟩ + |11⟩)/√2 and GHZ(3) (|000⟩ + |111⟩)/√2 are completely
-    symmetric under qubit reversal (reversal-invariant). In Deutsch-Jozsa, where
-    the ancilla is qubit 2 and query qubits are 0 and 1, this reversal asymmetry
-    makes the endianness convention essential.
+    Bell and GHZ targets are invariant under qubit reversal, so they cannot
+    detect a reversed serializer. DJ assigns queries to qubits 0 and 1 and
+    the ancilla to qubit 2; its asymmetric targets exercise this distinction.
     """
 
     terms: list[str] = []
@@ -111,32 +106,22 @@ def _format_state(
         if not isinstance(token, str):
             raise InvalidContractError(f"state amplitude {index} must be a string")
 
-        if token == "zero":
-            continue
-
-        # In QuantumLib Dirac notation, ∣b_0, b_1, ..., b_{n-1}⟩ maps qubit k to position k.
-        # Bell and GHZ are invariant under bit reversal, so only Deutsch-Jozsa revealed this.
-        bits = [(index >> k) & 1 for k in range(num_qubits)]
-        basis_str = "∣" + ", ".join(str(b) for b in bits) + "⟩"
-
-        if token == "one":
-            term = basis_str
-        elif token == "minus_one":
-            term = f"(- C1)%R .* {basis_str}"
-        elif token == "inv_sqrt_two":
-            term = f"(/√2)%R .* {basis_str}"
-        elif token == "minus_inv_sqrt_two":
-            term = f"(- /√2)%R .* {basis_str}"
-        elif token == "i":
-            term = f"Ci .* {basis_str}"
-        elif token == "minus_i":
-            term = f"(- Ci)%R .* {basis_str}"
-        else:
+        try:
+            amp_token = AmplitudeToken(token)
+            scalar = _COQ_SCALARS[amp_token]
+        except (KeyError, ValueError):
             raise InvalidContractError(
                 f"state amplitude {token!r} is not supported by Coq backend"
             )
 
-        terms.append(term)
+        if scalar is None:
+            continue
+
+        # In QuantumLib Dirac notation, ∣b_0, b_1, ..., b_{n-1}⟩ maps qubit k to position k.
+        # Read low-order bits first to preserve the shared IR's little-endian meaning.
+        bits = [(index >> k) & 1 for k in range(num_qubits)]
+        basis_str = "∣" + ", ".join(str(b) for b in bits) + "⟩"
+        terms.append(f"{scalar}{basis_str}")
 
     if not terms:
         return "Zero"
@@ -171,11 +156,8 @@ def generate_coq_module(
     target_name = f"{prefix}_target"
     theorem_name = f"{prefix}_correct"
 
-    if checked_ir.operations:
-        gates_str = " ; ".join(_format_gate(op) for op in checked_ir.operations)
-    else:
-        gates_str = "SKIP"
-
+    # Cons notation avoids SQIR's competing semicolon notation for composition.
+    gates_str = " :: ".join([*(_format_gate(op) for op in checked_ir.operations), "nil"])
 
     input_expr = _format_state(
         contract_data["initial_state"],
@@ -188,17 +170,15 @@ def generate_coq_module(
 
     vector_dim = 1 << contract.num_qubits
 
-    # QuantumLib 1.7 exposes Dirac notation through Quantum, not a Dirac module.
-    source = f"""From QuantumLib Require Import Complex Quantum.
-From SQIR Require Import UnitarySem.
-Open Scope ucom_scope.
+    source = f"""From QuantumValidation Require Import Circuit.
+Import QuantumValidationSQIR.
 
 (*!
 Generated from circuit IR and contract schema version 0.1.
 Regenerate this module instead of editing it by hand.
 *)
 
-Definition {circuit_name} : base_ucom {contract.num_qubits} :=
+Definition {circuit_name} : Circuit {contract.num_qubits} :=
   {gates_str}.
 
 Definition {input_name} : Vector {vector_dim} :=
@@ -208,15 +188,10 @@ Definition {target_name} : Vector {vector_dim} :=
   {target_expr}.
 
 Theorem {theorem_name} :
-  uc_eval {circuit_name} × {input_name} = {target_name}.
+  run {circuit_name} × {input_name} = {target_name}.
 Proof.
   unfold {circuit_name}, {input_name}, {target_name}.
-  simpl.
-  Msimpl.
-  autorewrite with eval_db.
-  solve_matrix.
-  (* Matrix reduction leaves exact scalar identities involving sqrt(2). *)
-  all: autorewrite with RtoC_db; Csimpl; C_field.
+  solve_circuit.
 Qed.
 """
 

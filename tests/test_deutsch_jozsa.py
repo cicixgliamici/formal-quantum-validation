@@ -74,7 +74,7 @@ def test_dj2_contract_json_files_are_valid() -> None:
 
 
 def test_dj2_coq_generator_produces_valid_structure(tmp_path: Path) -> None:
-    """Verify that generate_coq_module produces the expected SQIR theorems."""
+    """Check serialization through Circuit.v; coq_tests checks proof acceptance."""
 
     ir_path = EXAMPLES_DIR / "dj2_constant_ir.json"
     contract_path = DATA_DIR / "dj2_constant.contract.json"
@@ -82,14 +82,14 @@ def test_dj2_coq_generator_produces_valid_structure(tmp_path: Path) -> None:
     contract_data = json.loads(contract_path.read_text(encoding="utf-8"))
 
     module = generate_coq_module(raw_ir, contract_data)
-    assert "From QuantumLib Require Import Complex Quantum." in module.source
-    assert "From SQIR Require Import UnitarySem." in module.source
-    assert "deutsch_jozsa_two_bit_constant_circuit : base_ucom 3 :=" in module.source
-    assert "X 2 ; H 0 ; H 1 ; H 2 ; H 0 ; H 1" in module.source
+    assert "From QuantumValidation Require Import Circuit." in module.source
+    assert "Import QuantumValidationSQIR." in module.source
+    assert "deutsch_jozsa_two_bit_constant_circuit : Circuit 3 :=" in module.source
+    assert "GateX 2 :: GateH 0 :: GateH 1 :: GateH 2 :: GateH 0 :: GateH 1 :: nil" in module.source
     # Verify SQIR endianness: qubit 2 is the 3rd Dirac component ∣q0, q1, q2⟩
     assert "(/√2)%R .* ∣0, 0, 0⟩ .+ (- /√2)%R .* ∣0, 0, 1⟩" in module.source
     assert "Theorem deutsch_jozsa_two_bit_constant_correct :" in module.source
-    assert "solve_matrix." in module.source
+    assert "solve_circuit." in module.source
 
     out_file = tmp_path / "GeneratedDj2Constant.v"
     written = write_coq_module(raw_ir, contract_data, out_file)
@@ -106,8 +106,8 @@ def test_dj2_coq_generator_balanced(tmp_path: Path) -> None:
     contract_data = json.loads(contract_path.read_text(encoding="utf-8"))
 
     module = generate_coq_module(raw_ir, contract_data)
-    assert "CNOT 0 2" in module.source
-    assert "deutsch_jozsa_two_bit_balanced_circuit : base_ucom 3 :=" in module.source
+    assert "GateCNOT 0 2" in module.source
+    assert "deutsch_jozsa_two_bit_balanced_circuit : Circuit 3 :=" in module.source
     # Verify SQIR endianness: query qubit 0 is 1, qubit 1 is 0, ancilla qubit 2 is 0 or 1
     assert "(/√2)%R .* ∣1, 0, 0⟩ .+ (- /√2)%R .* ∣1, 0, 1⟩" in module.source
     assert "Theorem deutsch_jozsa_two_bit_balanced_correct :" in module.source
@@ -119,15 +119,15 @@ def test_coq_generator_bell_and_ghz3() -> None:
     bell_ir = load_raw_ir(EXAMPLES_DIR / "bell_ir.json")
     bell_contract = json.loads((DATA_DIR / "bell.contract.json").read_text(encoding="utf-8"))
     bell_mod = generate_coq_module(bell_ir, bell_contract)
-    assert "bell_state_preparation_circuit : base_ucom 2 :=" in bell_mod.source
-    assert "H 0 ; CNOT 0 1" in bell_mod.source
+    assert "bell_state_preparation_circuit : Circuit 2 :=" in bell_mod.source
+    assert "GateH 0 :: GateCNOT 0 1 :: nil" in bell_mod.source
     assert "Theorem bell_state_preparation_correct :" in bell_mod.source
 
     ghz_ir = load_raw_ir(EXAMPLES_DIR / "ghz3_ir.json")
     ghz_contract = json.loads((DATA_DIR / "ghz3.contract.json").read_text(encoding="utf-8"))
     ghz_mod = generate_coq_module(ghz_ir, ghz_contract)
-    assert "ghz_three_qubit_preparation_circuit : base_ucom 3 :=" in ghz_mod.source
-    assert "H 0 ; CNOT 0 1 ; CNOT 1 2" in ghz_mod.source
+    assert "ghz_three_qubit_preparation_circuit : Circuit 3 :=" in ghz_mod.source
+    assert "GateH 0 :: GateCNOT 0 1 :: GateCNOT 1 2 :: nil" in ghz_mod.source
 
 
 def test_dj2_circuit_extractor_equality() -> None:
@@ -241,5 +241,3 @@ def test_lean_generator_dj2_reproducibility(tmp_path: Path) -> None:
         out_file = tmp_path / f"{module_name}.lean"
         write_lean_module(ir_data, contract_data, out_file)
         assert out_file.read_bytes() == generated.source.encode("utf-8")
-
-

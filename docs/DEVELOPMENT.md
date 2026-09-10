@@ -68,13 +68,19 @@ opam exec -- python -m pytest coq_tests -v
 ```
 
 Install the Python project in a Python 3.12 environment as described above.
-The Coq suite compiles all five committed modules in temporary directories.
+The Coq suite first compiles the shared `Circuit.v` abstraction, then compiles
+the four generated clients against it in temporary directories.
 For both DJ examples it compiles a freshly generated correct target, checks
 the mutated definitions separately, and requires compilation of the false
 theorem to fail. Missing tools, imports, and timeouts fail the suite. The
 separate CI Coq job runs the same commands; Lean integration tests remain
 independent. The default Python suite checks byte-for-byte drift for all four
 generated `.v` files and requires coverage of any newly added generated module.
+
+The same Coq job runs `coq_tests/test_gate_semantics.py`: 248 obligations compare
+all six gates with independent exact basis-action rules on one to three qubits.
+Additional cases cover empty circuits and signed/imaginary inputs. To run only
+this regression, use `opam exec -- python -m pytest coq_tests/test_gate_semantics.py -v`.
 
 To update generated Coq source, use `python -m fqv.generate_cli --backend coq`
 with the example IR, matching contract, and committed destination. Review

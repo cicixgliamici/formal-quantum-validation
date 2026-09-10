@@ -79,6 +79,8 @@ def build_dj2_constant_circuit() -> QuantumCircuit:
     """Build the 2-bit query Deutsch-Jozsa circuit with constant f=0 oracle."""
 
     circuit = QuantumCircuit(3, name="dj2_constant")
+    # Qubits 0 and 1 are queries; X then H prepares ancilla 2 in |->.
+    # The fixed f=0 oracle is identity, so no oracle gate is emitted.
     circuit.x(2)
     circuit.h(0)
     circuit.h(1)
@@ -92,10 +94,12 @@ def build_dj2_balanced_circuit() -> QuantumCircuit:
     """Build the 2-bit query Deutsch-Jozsa circuit with balanced f(x0,x1)=x0 oracle."""
 
     circuit = QuantumCircuit(3, name="dj2_balanced")
+    # Keep the same query/ancilla assignment as the constant fixture.
     circuit.x(2)
     circuit.h(0)
     circuit.h(1)
     circuit.h(2)
+    # This fixed oracle computes f(x0, x1)=x0 into ancilla 2 by phase kickback.
     circuit.cx(0, 2)
     circuit.h(0)
     circuit.h(1)
@@ -112,4 +116,3 @@ def dj2_balanced_contract() -> QuantumContract:
     """Return the canonical 2-bit Deutsch-Jozsa balanced contract."""
 
     return _packaged_contract("dj2_balanced.contract.json")
-

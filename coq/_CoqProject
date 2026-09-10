@@ -1,3 +1,4 @@
+-R ../build/SQIR/SQIR SQIR
 -R QuantumValidation QuantumValidation
 QuantumValidation/Circuit.v
 QuantumValidation/GeneratedBell.v

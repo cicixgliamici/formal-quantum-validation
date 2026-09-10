@@ -54,6 +54,13 @@ the Python generator itself into verified software.
 
 ## Coq/SQIR regression
 
+Generated clients use `QuantumValidation.Circuit`: public gate constructors,
+ordered composition, SQIR lowering, and a shared proof tactic. Operand bounds
+remain Python checked-IR preconditions, not proofs carried by Coq constructors.
+The Coq gate regression checks 248 basis cases against independent exact bit
+rules for all six gates on one to three qubits, including reversed and
+non-adjacent operands. It also checks empty circuits and complex inputs.
+
 The separate Coq job compiles Bell, GHZ(3), and both fixed two-bit DJ examples
 against the compiler and semantic libraries pinned in `coq/toolchain.env`.
 Both DJ negative tests preserve normalization while changing a relative phase.

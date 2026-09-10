@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 from typing import Any, Mapping, Sequence
 
+from fqv.domain.amplitudes import AmplitudeToken
 from fqv.domain.contract_parser import contract_from_dict
 from fqv.domain.contract_validation import InvalidContractError
 from fqv.ir.checked import CheckedOperation
@@ -27,14 +28,14 @@ class UnsupportedFormalizationError(ValueError):
     """
 
 
-_LEAN_AMPLITUDES: dict[str, str] = {
-    "zero": "0",
-    "one": "1",
-    "minus_one": "-1",
-    "i": "Complex.I",
-    "minus_i": "-Complex.I",
-    "inv_sqrt_two": "invSqrtTwo",
-    "minus_inv_sqrt_two": "-invSqrtTwo",
+_LEAN_AMPLITUDES: dict[AmplitudeToken, str] = {
+    AmplitudeToken.ZERO: "0",
+    AmplitudeToken.ONE: "1",
+    AmplitudeToken.MINUS_ONE: "-1",
+    AmplitudeToken.I: "Complex.I",
+    AmplitudeToken.MINUS_I: "-Complex.I",
+    AmplitudeToken.INV_SQRT_TWO: "invSqrtTwo",
+    AmplitudeToken.MINUS_INV_SQRT_TWO: "-invSqrtTwo",
 }
 
 
@@ -86,15 +87,17 @@ def _format_amplitudes(tokens: Sequence[object]) -> list[str]:
 
     expressions: list[str] = []
     for index, token in enumerate(tokens):
-        if (
-            not isinstance(token, str)
-            or token not in _LEAN_AMPLITUDES
-        ):
+        if not isinstance(token, str):
             raise InvalidContractError(
                 f"state amplitude {index} is not supported by Lean"
             )
-
-        expressions.append(_LEAN_AMPLITUDES[token])
+        try:
+            amp_token = AmplitudeToken(token)
+            expressions.append(_LEAN_AMPLITUDES[amp_token])
+        except (KeyError, ValueError):
+            raise InvalidContractError(
+                f"state amplitude {index} is not supported by Lean"
+            )
 
     return expressions
 

@@ -35,11 +35,12 @@ def test_cli_accepts_arbitrary_ir_and_contract_paths() -> None:
     assert arguments.contract.name == "ghz3.contract.json"
 
 
-def test_core_and_lean_backend_have_no_qiskit_imports() -> None:
+def test_core_and_formal_backends_have_no_qiskit_imports() -> None:
     independent_roots = [
         PROJECT_ROOT / "src" / "fqv" / "domain",
         PROJECT_ROOT / "src" / "fqv" / "ir",
         PROJECT_ROOT / "src" / "fqv" / "backend" / "lean",
+        PROJECT_ROOT / "src" / "fqv" / "backend" / "coq",
     ]
     sources = "\n".join(
         path.read_text(encoding="utf-8")
