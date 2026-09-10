@@ -188,7 +188,8 @@ def generate_coq_module(
 
     vector_dim = 1 << contract.num_qubits
 
-    source = f"""From QuantumLib Require Import Complex Dirac.
+    # QuantumLib 1.7 exposes Dirac notation through Quantum, not a Dirac module.
+    source = f"""From QuantumLib Require Import Complex Quantum.
 From SQIR Require Import UnitarySem.
 Open Scope ucom_scope.
 
@@ -214,6 +215,8 @@ Proof.
   Msimpl.
   autorewrite with eval_db.
   solve_matrix.
+  (* Matrix reduction leaves exact scalar identities involving sqrt(2). *)
+  all: autorewrite with RtoC_db; Csimpl; C_field.
 Qed.
 """
 

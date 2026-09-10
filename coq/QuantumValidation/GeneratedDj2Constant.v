@@ -1,4 +1,4 @@
-From QuantumLib Require Import Complex Dirac.
+From QuantumLib Require Import Complex Quantum.
 From SQIR Require Import UnitarySem.
 Open Scope ucom_scope.
 
@@ -24,4 +24,6 @@ Proof.
   Msimpl.
   autorewrite with eval_db.
   solve_matrix.
+  (* Matrix reduction leaves exact scalar identities involving sqrt(2). *)
+  all: autorewrite with RtoC_db; Csimpl; C_field.
 Qed.

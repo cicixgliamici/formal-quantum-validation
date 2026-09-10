@@ -31,6 +31,13 @@ python -m pip check
 lake build
 ```
 
+The Coq/SQIR backend checks Bell, GHZ(3), and the two fixed Deutsch-Jozsa
+examples. Follow the [pinned Coq setup](docs/DEVELOPMENT.md#coq-environment),
+then run `opam exec -- python -m pytest coq_tests -v`. CI compiles the committed
+modules, rejects mutated DJ targets, and checks generated `.v` files for drift.
+The Python CI job also checks generated Lean source for drift for Bell, GHZ(3),
+DJ constant, and DJ balanced on both Linux and Windows.
+
 See [architecture](docs/ARCHITECTURE.md), the
 [code study guide](docs/CODE_STUDY_GUIDE.md),
 [development](docs/DEVELOPMENT.md), and the

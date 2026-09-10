@@ -8,6 +8,28 @@ permissions:
   contents: read
 
 jobs:
+  coq:
+    name: Coq checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the shared toolchain pins
+        run: grep -v '^#' coq/toolchain.env >> "$GITHUB_ENV"
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ env.OCAML_VERSION }}
+      - name: Build the pinned Coq and SQIR environment
+        run: opam exec -- bash coq/setup.sh
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+      - name: Install Python test dependencies
+        run: python -m pip install -c constraints-python312.txt -e ".[dev]"
+      - name: Check committed Coq source for drift
+        run: python -m pytest tests/test_coq_drift.py -v
+      - name: Compile Coq obligations and reject mutated DJ targets
+        run: opam exec -- python -m pytest coq_tests -v
+
   python:
     name: Python checks
     strategy:
@@ -58,11 +80,28 @@ jobs:
           src/fqv/data/ghz3.contract.json
           "${{ runner.temp }}/GeneratedGhz3.lean"
 
-      # Generated proof obligations must remain traceable to committed inputs.
+      - name: Regenerate the formal DJ constant obligation
+        run: >-
+          python -m fqv.generate_cli
+          examples/dj2_constant_ir.json
+          src/fqv/data/dj2_constant.contract.json
+          "${{ runner.temp }}/GeneratedDj2Constant.lean"
+
+      - name: Regenerate the formal DJ balanced obligation
+        run: >-
+          python -m fqv.generate_cli
+          examples/dj2_balanced_ir.json
+          src/fqv/data/dj2_balanced.contract.json
+          "${{ runner.temp }}/GeneratedDj2Balanced.lean"
+
+      # Compare all four Lean obligations with fresh output from committed JSON.
+      # Temporary output preserves the committed files so drift fails visibly.
       - name: Check generated Lean source for drift
         run: |
           diff -u lean/QuantumValidation/GeneratedBell.lean "${{ runner.temp }}/GeneratedBell.lean"
           diff -u lean/QuantumValidation/GeneratedGhz3.lean "${{ runner.temp }}/GeneratedGhz3.lean"
+          diff -u lean/QuantumValidation/GeneratedDj2Constant.lean "${{ runner.temp }}/GeneratedDj2Constant.lean"
+          diff -u lean/QuantumValidation/GeneratedDj2Balanced.lean "${{ runner.temp }}/GeneratedDj2Balanced.lean"
 
   lean:
     name: Lean checks

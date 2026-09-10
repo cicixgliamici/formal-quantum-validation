@@ -38,6 +38,15 @@ htmlcov/
 # Lean dependencies and build products.
 .lake/
 
+# Coq compilation products.
+*.vo
+*.vos
+*.vok
+*.glob
+.*.aux
+.lia.cache
+.nra.cache
+
 # Generated verification artifacts.
 build/
 output/

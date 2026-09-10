@@ -51,7 +51,57 @@ Python 3.14 installation is not a substitute for this Python 3.12 environment.
 The default `fqv-verify` example uses packaged resources and works outside the
 repository; custom `--ir` and `--contract` paths remain relative to the caller.
 
+## Coq environment
+
+Use Linux or WSL with opam installed. `coq/toolchain.env` pins OCaml 4.14.1,
+Coq 8.19.2, QuantumLib 1.7.0, and an exact SQIR Git commit. The setup script
+builds only upstream `SQIR.v` and `UnitarySem.v`, the complete SQIR dependency
+closure used here; VOQC and upstream examples are not required.
+
+```bash
+source coq/toolchain.env
+opam switch create fqv-coq "$OCAML_VERSION"
+eval "$(opam env --switch=fqv-coq)"
+bash coq/setup.sh
+python -m pytest tests/test_coq_drift.py -v
+opam exec -- python -m pytest coq_tests -v
+```
+
+Install the Python project in a Python 3.12 environment as described above.
+The Coq suite compiles all five committed modules in temporary directories.
+For both DJ examples it compiles a freshly generated correct target, checks
+the mutated definitions separately, and requires compilation of the false
+theorem to fail. Missing tools, imports, and timeouts fail the suite. The
+separate CI Coq job runs the same commands; Lean integration tests remain
+independent. The default Python suite checks byte-for-byte drift for all four
+generated `.v` files and requires coverage of any newly added generated module.
+
+To update generated Coq source, use `python -m fqv.generate_cli --backend coq`
+with the example IR, matching contract, and committed destination. Review
+toolchain changes together with regenerated artifacts and rerun both suites.
+The compiler and semantic libraries are pinned; opam's host/build dependencies
+are resolved by opam, so this is not a bit-identical operating-system image.
+
 ## Lean environment
+
+The Python CI job checks generated Lean source for drift on both Linux and
+Windows. It regenerates Bell, GHZ(3), DJ constant, and DJ balanced into temporary
+files and compares each with its committed `lean/QuantumValidation/Generated*.lean`
+counterpart. Any difference fails CI; regeneration does not overwrite the
+committed artifacts. The separate Lean job compiles the formal development.
+
+To reproduce the DJ comparisons locally in PowerShell:
+
+```powershell
+python -m fqv.generate_cli examples/dj2_constant_ir.json src/fqv/data/dj2_constant.contract.json build/GeneratedDj2Constant.lean
+python -m fqv.generate_cli examples/dj2_balanced_ir.json src/fqv/data/dj2_balanced.contract.json build/GeneratedDj2Balanced.lean
+git diff --no-index --exit-code lean/QuantumValidation/GeneratedDj2Constant.lean build/GeneratedDj2Constant.lean
+git diff --no-index --exit-code lean/QuantumValidation/GeneratedDj2Balanced.lean build/GeneratedDj2Balanced.lean
+```
+
+When intentionally changing an IR, contract, or generator, regenerate the
+affected committed modules, review the diff, and run `lake build` before
+submitting the change.
 
 Elan reads `lean-toolchain` and installs the matching Lean release
 automatically:

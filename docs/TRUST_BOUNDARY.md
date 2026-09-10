@@ -38,8 +38,10 @@ families require reusable semantic lemmas and induction.
 
 Milestone 3 generates the formal circuit, input state, target state, and
 theorem statement from versioned JSON. Lean still checks the resulting proof.
-CI regenerates the Bell and GHZ(3) modules and rejects drift between source data and the
-committed generated artifact.
+On both Linux and Windows, the Python CI job regenerates the Bell, GHZ(3),
+DJ constant, and DJ balanced Lean modules from their committed IR and contracts.
+It compares temporary output with all four committed `.lean` artifacts and
+rejects any drift. Compilation remains a separate check in the Lean job.
 
 Generated equality includes global phase. The executable state contract uses
 the same convention with a numerical roundoff tolerance; the separate operator
@@ -49,6 +51,20 @@ the Python translator correct.
 The generator remains trusted to preserve the meaning of IR and contract
 fields. Its validation and regression tests reduce this risk but do not turn
 the Python generator itself into verified software.
+
+## Coq/SQIR regression
+
+The separate Coq job compiles Bell, GHZ(3), and both fixed two-bit DJ examples
+against the compiler and semantic libraries pinned in `coq/toolchain.env`.
+Both DJ negative tests preserve normalization while changing a relative phase.
+They first compile the correct theorem and the mutated definitions, then require
+the mutated theorem to fail. Drift tests compare every generated `.v` artifact
+with fresh production-generator output byte for byte.
+
+These checks add Coq's kernel, SQIR/QuantumLib definitions and their imported
+assumptions, and the Python Coq translator to the relevant trust boundary.
+They do not prove the translator correct or establish equivalence of the two
+formal backends for arbitrary circuits.
 
 ## Transpilation equivalence
 

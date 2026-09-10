@@ -1,4 +1,4 @@
-From QuantumLib Require Import Complex Dirac.
+From QuantumLib Require Import Complex Quantum.
 From SQIR Require Import UnitarySem.
 Open Scope ucom_scope.
 

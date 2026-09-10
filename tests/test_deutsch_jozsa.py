@@ -82,7 +82,7 @@ def test_dj2_coq_generator_produces_valid_structure(tmp_path: Path) -> None:
     contract_data = json.loads(contract_path.read_text(encoding="utf-8"))
 
     module = generate_coq_module(raw_ir, contract_data)
-    assert "From QuantumLib Require Import Complex Dirac." in module.source
+    assert "From QuantumLib Require Import Complex Quantum." in module.source
     assert "From SQIR Require Import UnitarySem." in module.source
     assert "deutsch_jozsa_two_bit_constant_circuit : base_ucom 3 :=" in module.source
     assert "X 2 ; H 0 ; H 1 ; H 2 ; H 0 ; H 1" in module.source
