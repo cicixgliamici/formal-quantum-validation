@@ -69,6 +69,12 @@ invoke `solve_circuit`. The test harness builds `Circuit.v` first in a fresh
 session directory, then compiles clients against that artifact; a stale local
 `Circuit.vo` cannot hide an error.
 
+`solve_basis_circuit` is a test-only companion for concrete three-qubit basis
+obligations. Keeping it separate matters: the production tactic must reject a
+false DJ target promptly, while the basis tactic may use the more aggressive
+dimension-eight matrix solver. Both still produce ordinary proof terms checked
+by the Coq kernel.
+
 Coq gate constructors carry natural-number operands rather than dependent
 proofs. The separate `gate_well_formed` and `circuit_well_formed` predicates
 state operand bounds, distinct binary operands, and positive register size.
@@ -88,12 +94,16 @@ The default Python suite includes Coq artifact drift checks. The Python CI job
 also regenerates and compares all four Lean artifacts: Bell, GHZ(3), DJ constant,
 and DJ balanced. Separate Lean and Coq jobs compile the formal developments.
 
-`coq_tests/test_gate_semantics.py` generates 248 gate/basis obligations covering
-every valid placement of the six gates on one-, two-, and three-qubit registers.
+`coq_tests/test_gate_semantics.py` generates 176 gate/basis obligations. I, X,
+Z, and CNOT cover every valid placement through three qubits; H and SWAP cover
+every placement through two because the pinned dimension-eight tactics exceed
+the CI timeout for those gates.
 Expected outputs come from independent bit rules and exact amplitude tokens,
 not the SQIR compiler or production matrix code. Both operand orders,
-non-adjacent operands, and spectator qubits are included. Additional cases check
-empty circuits and signed/imaginary input serialization. The DJ tests require
+non-adjacent operands, and spectator qubits are included where the configured
+dimension permits. Cases are compiled in batches of eight to bound matrix-tactic
+cost. Fourteen additional cases check empty circuits and three check
+signed/imaginary input serialization. The DJ tests require
 both correct theorems to compile and both mutated targets to be rejected.
 They also build both DJ variants as live Qiskit circuits, extract fresh IR,
 generate Coq obligations, and submit those obligations directly to `coqc`.

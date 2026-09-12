@@ -36,7 +36,12 @@ _COQ_SCALARS: dict[AmplitudeToken, str | None] = {
 
 @dataclass(frozen=True)
 class GeneratedCoqModule:
-    """Deterministic Coq/SQIR artifact and its theorem name."""
+    """Carry generated source together with its public correctness theorem.
+
+    `source` is the complete UTF-8 `.v` payload. `theorem_name` lets callers
+    report or inspect the main semantic result without parsing generated text.
+    The frozen value object prevents accidental drift after generation.
+    """
 
     source: str
     theorem_name: str
@@ -136,7 +141,13 @@ def generate_coq_module(
     ir: Mapping[str, Any],
     contract_data: Mapping[str, Any],
 ) -> GeneratedCoqModule:
-    """Generate a kernel-checkable SQIR obligation from IR and contract."""
+    """Generate definitions, typing evidence, and one exact semantic theorem.
+
+    Validation happens before formatting so every emitted operand and state has
+    already crossed the shared IR/contract boundary. Coq remains responsible
+    for checking the resulting proof; this function is deterministic translation,
+    not a proof checker.
+    """
 
     checked_ir = check_ir(ir)
 
@@ -150,6 +161,8 @@ def generate_coq_module(
 
     contract = contract_from_dict(contract_data)
 
+    # A shared prefix keeps every generated definition readable while allowing
+    # multiple artifacts to coexist in one logical Coq library.
     prefix = _coq_identifier(contract.name)
     circuit_name = f"{prefix}_circuit"
     input_name = f"{prefix}_input"
@@ -168,6 +181,7 @@ def generate_coq_module(
         num_qubits=contract.num_qubits,
     )
 
+    # An n-qubit pure state is a column vector with exactly 2^n entries.
     vector_dim = 1 << contract.num_qubits
 
     source = f"""From QuantumValidation Require Import Circuit.

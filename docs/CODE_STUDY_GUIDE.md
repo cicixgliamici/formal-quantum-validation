@@ -161,6 +161,26 @@ uses QuantumLib matrix semantics. Its preservation theorem connects source
 well-formedness to SQIR's `uc_well_typed`; this is distinct from proving that
 the Python generator always emits the intended source circuit.
 
+When explaining the implementation, assign one responsibility to each file:
+
+- `generator.py` validates shared inputs and emits deterministic Coq source; it
+  does not define gate matrices;
+- `Circuit.v` defines the public gate language, lowers it to SQIR, proves typing
+  preservation, and provides the proof tactics used by generated clients;
+- `conftest.py` builds a fresh logical Coq library and invokes the pinned
+  compiler, preventing stale `.vo` files from hiding failures;
+- `test_coq_compilation.py` checks reviewed artifacts, the live Qiskit-to-Coq
+  DJ route, deliberate target rejection, and invalid-operand rejection;
+- `test_gate_semantics.py` supplies an independent bit-level oracle and checks
+  generated gate obligations against the Coq kernel.
+
+The production `solve_circuit` tactic and test-only `solve_basis_circuit` tactic
+are intentionally separate. The latter handles concrete dimension-eight basis
+terms aggressively; the former keeps false DJ mutations quick to reject. The
+Coq regression covers 176 gate/basis obligations, 14 empty-circuit obligations,
+and 3 signed or imaginary input cases. H and SWAP stop at two qubits because the
+pinned tactic cannot reduce their dimension-eight terms within the CI timeout.
+
 Study exercise:
 
 1. Trace one Qiskit DJ circuit through extraction, generation, and `coqc`.

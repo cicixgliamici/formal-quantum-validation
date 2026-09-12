@@ -18,6 +18,7 @@ CASES = [
 
 @pytest.mark.parametrize("example,module", CASES)
 def test_committed_coq_matches_generator(example: str, module: str) -> None:
+    """Tie a reviewed Coq artifact byte-for-byte to its IR and contract inputs."""
     ir = json.loads((ROOT / f"examples/{example}_ir.json").read_text("utf-8"))
     contract = json.loads(
         (ROOT / f"src/fqv/data/{example}.contract.json").read_text("utf-8")
@@ -28,6 +29,7 @@ def test_committed_coq_matches_generator(example: str, module: str) -> None:
 
 
 def test_all_generated_modules_have_drift_coverage() -> None:
+    """Force new committed Generated*.v files to be added to the drift matrix."""
     assert {path.stem for path in (ROOT / "coq/QuantumValidation").glob("Generated*.v")} == {
         module for _, module in CASES
     }

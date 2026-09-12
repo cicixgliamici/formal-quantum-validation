@@ -49,8 +49,9 @@ then run `opam exec -- python -m pytest coq_tests -v`. CI compiles the committed
 modules, rejects mutated DJ targets, and checks generated `.v` files for drift.
 Generated Coq proofs use the gate language, SQIR translation, and proof tactic
 defined in `coq/QuantumValidation/Circuit.v`. The Coq gate regression checks
-248 exact basis cases for all six gates on one to three qubits, including
-reversed and non-adjacent operands, plus empty circuits and complex inputs.
+176 exact gate/basis obligations, plus 14 empty-circuit cases and 3 complex
+amplitudes. I, X, Z, and CNOT reach three qubits; H and SWAP stop at two because
+their dimension-eight proof terms exceed the pinned QuantumLib tactic budget.
 The Python CI job also checks generated Lean source for drift for Bell, GHZ(3),
 DJ constant, and DJ balanced on both Linux and Windows.
 

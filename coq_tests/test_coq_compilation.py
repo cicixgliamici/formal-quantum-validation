@@ -26,7 +26,11 @@ DJ_QISKIT_CASES = [
     "GeneratedDj2Balanced",
 ])
 def test_committed_module_compiles(module: str, tmp_path: Path, coq_compile) -> None:
-    """Require each reviewed generated artifact to remain kernel-checkable."""
+    """Require each reviewed generated artifact to remain kernel-checkable.
+
+    Drift tests answer whether generation is deterministic; this test answers
+    the separate question of whether Coq accepts the committed proof term.
+    """
 
     source = (ROOT / f"coq/QuantumValidation/{module}.v").read_text("utf-8")
     result = coq_compile(source, tmp_path / f"{module}.v")
@@ -53,13 +57,20 @@ def test_dj_qiskit_to_coq_compiles(
 
 @pytest.mark.parametrize("example", ["dj2_constant", "dj2_balanced"])
 def test_coq_rejects_mutated_dj_target(example: str, tmp_path: Path, coq_compile) -> None:
-    """Prove that syntax success cannot disguise a false relative-phase target."""
+    """Show that a normalized but phase-wrong DJ target is not provable.
+
+    The mutation changes an observable relative phase without breaking vector
+    length or normalization. Compiling definitions separately ensures the final
+    failure comes from the false equality rather than malformed generated Coq.
+    """
 
     ir = json.loads((ROOT / f"examples/{example}_ir.json").read_text("utf-8"))
     contract = json.loads(
         (ROOT / f"src/fqv/data/{example}.contract.json").read_text("utf-8")
     )
     original = generate_coq_module(ir, contract).source
+    # The positive control proves the fixture and toolchain are healthy before
+    # the same circuit is paired with the deliberately wrong target.
     control = coq_compile(original, tmp_path / "Control.v")
     assert control.returncode == 0, control.stdout + control.stderr
     # Flip one branch, preserving normalization but changing the relative phase.
@@ -78,7 +89,12 @@ def test_coq_rejects_mutated_dj_target(example: str, tmp_path: Path, coq_compile
 
 
 def test_coq_rejects_ill_formed_circuit(tmp_path: Path, coq_compile) -> None:
-    """Ensure invalid source operands cannot yield an SQIR typing proof."""
+    """Connect repeated CNOT operands to both source and SQIR rejection.
+
+    The first lemma exercises `gate_well_formed`; the second checks the lowered
+    SQIR program directly. Together they guard both sides of the preservation
+    theorem instead of testing only the Python validator.
+    """
 
     source = """From QuantumValidation Require Import Circuit.
 Import QuantumValidationSQIR.
@@ -86,13 +102,18 @@ Import QuantumValidationSQIR.
 Example repeated_cnot_is_not_well_formed :
   ~ circuit_well_formed (GateCNOT 0 0 :: nil : Circuit 1).
 Proof.
-  unfold circuit_well_formed, gate_well_formed.
-  intuition.
+  (* Forall exposes the only gate's validity; its distinctness field is 0 <> 0. *)
+  intros [_ gates_valid].
+  inversion gates_valid as [| ? ? gate_valid]; subst.
+  cbn [gate_well_formed] in gate_valid.
+  destruct gate_valid as [_ [_ distinct]].
+  exact (distinct eq_refl).
 Qed.
 
 Example repeated_cnot_compilation_is_not_well_typed :
   ~ uc_well_typed (compile_circuit (GateCNOT 0 0 :: nil : Circuit 1)).
 Proof.
+  (* SQIR's CNOT typing judgment carries the same distinct-wire requirement. *)
   cbn [compile_circuit compile_gate].
   intro typed.
   apply uc_well_typed_CNOT in typed as [_ [_ distinct]].

@@ -108,6 +108,8 @@ Ltac solve_circuit :=
   (* 2. Evaluate SQIR program to a concrete Kronecker/matrix expression. *)
   Msimpl;
   autorewrite with eval_db;
+  (* Normalize exact Z phases and composite identities before matrix crunching. *)
+  rewrite ?phase_pi;
   (* 3. Discharge positive register dimension side-condition (SKIP introduces 0 < dim). *)
   try lia;
   simpl;
@@ -118,5 +120,26 @@ Ltac solve_circuit :=
   autorewrite with RtoC_db;
   Csimpl;
   C_field.
+
+(* Concrete dimension-eight basis checks need QuantumLib's optimized solver.
+   Keep it separate so false generated obligations still fail quickly. *)
+Ltac solve_basis_circuit :=
+  (* Follow the production lowering path so the test changes only the matrix
+     reduction strategy, not the semantics being checked. *)
+  unfold run;
+  cbn [compile_circuit compile_gate];
+  simpl;
+  Msimpl;
+  autorewrite with eval_db;
+  (* SQIR evaluates Z as phase_shift PI; phase_pi exposes the exact sigma-z
+     entries expected by the independent basis oracle. *)
+  rewrite ?phase_pi;
+  try lia;
+  simpl;
+  Msimpl;
+  (* Explicit identities make concrete 8x8 terms suitable for the optimized
+     cell-by-cell solver. This tactic is never emitted into production files. *)
+  unfold I;
+  solve_matrix_fast.
 
 End QuantumValidationSQIR.

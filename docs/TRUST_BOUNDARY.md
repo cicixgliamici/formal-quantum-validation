@@ -66,9 +66,12 @@ their source circuit well formed and derive this SQIR judgment automatically.
 Checked IR and the Python translator nevertheless remain part of the end-to-end
 trust boundary because Coq checks the generated circuit, not its correspondence
 with the original Qiskit object.
-The Coq gate regression checks 248 basis cases against independent exact bit
-rules for all six gates on one to three qubits, including reversed and
-non-adjacent operands. It also checks empty circuits and complex inputs.
+The Coq gate regression checks 176 basis cases against independent exact bit
+rules. I, X, Z, and CNOT reach three qubits; H and SWAP reach two due to the
+pinned matrix tactic's dimension-eight timeout. Reversed operands,
+non-adjacent operands, and spectator qubits are covered where applicable. It
+also checks 14 empty-circuit cases and 3 complex-input cases. These finite caps
+belong to regression execution, not to the formal `Gate dim` definition.
 
 The separate Coq job compiles Bell, GHZ(3), and both fixed two-bit DJ examples
 against the compiler and semantic libraries pinned in `coq/toolchain.env`.

@@ -86,10 +86,13 @@ separate CI Coq job runs the same commands; Lean integration tests remain
 independent. The default Python suite checks byte-for-byte drift for all four
 generated `.v` files and requires coverage of any newly added generated module.
 
-The same Coq job runs `coq_tests/test_gate_semantics.py`: 248 obligations compare
-all six gates with independent exact basis-action rules on one to three qubits.
-Additional cases cover empty circuits and signed/imaginary inputs. To run only
-this regression, use `opam exec -- python -m pytest coq_tests/test_gate_semantics.py -v`.
+The same Coq job runs `coq_tests/test_gate_semantics.py`: 176 obligations compare
+all six gates with independent exact basis-action rules. I, X, Z, and CNOT are
+checked through three qubits; H and SWAP are checked through two because their
+dimension-eight proof terms exceed the pinned tactic's per-module timeout.
+Another 14 obligations cover empty circuits and 3 cover signed/imaginary inputs.
+Cases are compiled in batches of eight to bound tactic cost. To run only this
+regression, use `opam exec -- python -m pytest coq_tests/test_gate_semantics.py -v`.
 
 To update generated Coq source, use `python -m fqv.generate_cli --backend coq`
 with the example IR, matching contract, and committed destination. Review
