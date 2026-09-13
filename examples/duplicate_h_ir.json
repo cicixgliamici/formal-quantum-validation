@@ -1,0 +1,19 @@
+{
+  "name": "duplicate_h",
+  "operations": [
+    {
+      "gate": "H",
+      "targets": [
+        0
+      ]
+    },
+    {
+      "gate": "H",
+      "targets": [
+        0
+      ]
+    }
+  ],
+  "qubits": 1,
+  "schema_version": "0.1"
+}

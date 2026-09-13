@@ -1,0 +1,16 @@
+{
+  "name": "duplicate H identity",
+  "qubits": 1,
+  "schema_version": "0.1",
+  "initial_state": ["one", "zero"],
+  "target_state": ["one", "zero"],
+  "probabilities": [
+    {"outcome": "0", "expected": 1.0},
+    {"outcome": "1", "expected": 0.0}
+  ],
+  "fidelity_threshold": 0.999999999999,
+  "resources": {
+    "allow_extra_gates": false,
+    "gate_counts": {"h": 2}
+  }
+}

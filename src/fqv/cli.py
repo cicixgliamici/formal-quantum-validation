@@ -14,16 +14,22 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from fqv.backend.coq.transpilation import write_transpilation_coq_module
+from fqv.backend.lean.transpilation import write_transpilation_lean_module
 from fqv.domain.contract_parser import load_contract
 from fqv.frontend.qiskit.circuits import bell_contract, build_bell_circuit
 from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
-from fqv.frontend.qiskit.extraction import export_ir
+from fqv.frontend.qiskit.extraction import circuit_to_ir, export_ir
 from fqv.frontend.qiskit.verification import verify_contract
 from fqv.ir.raw import load_raw_ir
 from fqv.ir.validation import check_ir
 from fqv.pipeline.transpilation import (
     TranspilationConfig,
     transpile_and_check,
+)
+from fqv.pipeline.transpilation_certificate import (
+    certify_h_cancellations,
+    write_transpilation_certificate,
 )
 from fqv.pipeline.verify import verify
 
@@ -69,6 +75,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("build/transpiled_ir.json"),
     )
     parser.add_argument("--equivalence-report", type=Path, default=None)
+    parser.add_argument("--transpilation-certificate", type=Path, default=None)
+    parser.add_argument("--transpilation-proof-output", type=Path, default=None)
+    parser.add_argument(
+        "--transpilation-proof-backend",
+        choices=["lean", "coq"],
+        default="lean",
+    )
     return parser
 
 
@@ -145,9 +158,34 @@ def main() -> int:
         if args.equivalence_report is not None:
             _write_report(args.equivalence_report, equivalence)
 
+        formal_requested = (
+            args.transpilation_certificate is not None
+            or args.transpilation_proof_output is not None
+        )
+        if formal_requested:
+            # Both endpoints cross the checked-IR boundary before the
+            # provider-neutral recognizer proposes a formal proof trace.
+            source_ir = check_ir(circuit_to_ir(circuit))
+            candidate_ir = check_ir(circuit_to_ir(transpiled))
+            certificate = certify_h_cancellations(source_ir, candidate_ir)
+            if args.transpilation_certificate is not None:
+                certificate_path = write_transpilation_certificate(
+                    certificate,
+                    args.transpilation_certificate,
+                )
+                print(f"Transpilation certificate written to: {certificate_path}")
+            if args.transpilation_proof_output is not None:
+                writer = (
+                    write_transpilation_coq_module
+                    if args.transpilation_proof_backend == "coq"
+                    else write_transpilation_lean_module
+                )
+                proof_path = writer(certificate, args.transpilation_proof_output)
+                print(f"Formal transpilation proof written to: {proof_path}")
+
     if args.json_report is not None:
         _write_report(args.json_report, report)
 
-    # This exit code combines executable verdicts only. Neither this command
-    # nor JSON report serialization invokes Lean or claims a formal certificate.
+    # Generation produces an obligation, while Lean or Coq remains responsible
+    # for accepting it in the subsequent toolchain step.
     return 0 if report.passed and equivalence_passed else 1

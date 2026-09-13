@@ -2,6 +2,7 @@ import QuantumValidation.Bell
 import QuantumValidation.GeneralCircuit
 import QuantumValidation.GeneralProperties
 import QuantumValidation.GeneralUnitarity
+import QuantumValidation.Transpilation
 import QuantumValidation.ParametricGhz
 import QuantumValidation.GeneratedBell
 import QuantumValidation.GeneratedGhz3

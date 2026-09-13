@@ -15,6 +15,10 @@ from qiskit import QuantumCircuit, transpile
 from qiskit.quantum_info import Operator, process_fidelity
 
 from fqv.domain.reports import EquivalenceReport
+from fqv.domain.transpilation import TranspilationCertificate
+from fqv.frontend.qiskit.extraction import circuit_to_ir
+from fqv.ir.validation import check_ir
+from fqv.pipeline.transpilation_certificate import certify_h_cancellations
 
 DEFAULT_BASIS_GATES = (
     "id",
@@ -197,3 +201,22 @@ def transpile_and_check(
         config=selected_config,
     )
     return transpiled, report
+
+
+def transpile_check_and_certify(
+    circuit: QuantumCircuit,
+    *,
+    config: TranspilationConfig | None = None,
+) -> tuple[QuantumCircuit, EquivalenceReport, TranspilationCertificate]:
+    """Run Qiskit and certify the result when it uses only known exact rules."""
+
+    transpiled, report = transpile_and_check(circuit, config=config)
+    if not report.passed:
+        raise ValueError("cannot certify a failed executable equivalence check")
+
+    # Export restrictions deliberately precede formal generation. In particular,
+    # exact IR 0.1 cannot erase a stored global phase or a transpiler layout.
+    source_ir = check_ir(circuit_to_ir(circuit))
+    candidate_ir = check_ir(circuit_to_ir(transpiled))
+    certificate = certify_h_cancellations(source_ir, candidate_ir)
+    return transpiled, report, certificate

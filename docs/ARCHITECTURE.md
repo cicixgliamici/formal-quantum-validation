@@ -49,6 +49,19 @@ raw IR -> validation ----+
 raw contract -> parser --+
 ```
 
+Certified transpilation proof of concept:
+
+```text
+Qiskit source -> source IR -------+
+Qiskit result -> candidate IR ----+-> exact rewrite certificate
+                                      +-> Lean equivalence -> Lean kernel
+                                      +-> Coq/SQIR equality -> Coq kernel
+```
+
+The certificate recognizer currently accepts only adjacent `H; H`
+cancellations. Unsupported Qiskit optimizations fail closed instead of being
+presented as formally certified.
+
 The command `fqv-verify` accepts arbitrary IR and contract paths. `fqv-bell`
 remains an alias throughout the 0.1 release line.
 

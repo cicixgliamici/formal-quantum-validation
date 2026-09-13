@@ -45,6 +45,7 @@ Qiskit circuit <-> checked IR + exact contract
 | Supported Lean circuits preserve inner products and normalization | General Lean theorems | Applies to the formal gate language |
 | Coq lowering preserves structural validity | Generated well-formedness proofs and `circuit_well_formed_compile_preservation` | Does not verify correspondence with Qiskit |
 | Transpilation preserves the complete operator in tested runs | Qiskit process fidelity and phase-adjusted matrix error | Numerical evidence, not a proof of the transpiler |
+| Adjacent `H; H` elimination preserves semantics | Generated Lean all-input equality and Coq/SQIR operator equality | Certificate PoC for one exact rewrite rule, not arbitrary transpilation |
 | Gate conventions agree across boundaries for tested cases | Lean Qiskit-derived and Coq independent-basis regressions | Finite coverage; Coq reaches three qubits for I/X/Z/CNOT and two for H/SWAP |
 | Qiskit DJ reaches Coq end to end | Direct builder-to-extractor-to-generator-to-`coqc` tests | Two fixed DJ variants |
 

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://formal-quantum-validation.local/schemas/transpilation-certificate-0.1.json",
+  "title": "Formal Quantum Validation Transpilation Certificate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "equivalence", "source", "candidate", "steps"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "equivalence": {"const": "exact"},
+    "source": {"$ref": "circuit-ir.schema.json"},
+    "candidate": {"$ref": "circuit-ir.schema.json"},
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule", "position", "target"],
+        "properties": {
+          "rule": {"const": "cancel_h_h"},
+          "position": {"type": "integer", "minimum": 0},
+          "target": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  }
+}
