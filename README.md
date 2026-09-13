@@ -59,5 +59,6 @@ See [architecture](docs/ARCHITECTURE.md), the
 [code study guide](docs/CODE_STUDY_GUIDE.md),
 [development](docs/DEVELOPMENT.md), and the
 [formal trust boundary](docs/TRUST_BOUNDARY.md). Reviewers can use the
-[presentation guide](docs/PRESENTATION_GUIDE.md) for the main claims and the
+[show-off command guide](docs/SHOWOFF_GUIDE.md) for a live demo, the
+[presentation guide](docs/PRESENTATION_GUIDE.md) for the main claims, and the
 [Coq/SQIR guide](docs/COQ_SQIR.md) for the second formal backend.
