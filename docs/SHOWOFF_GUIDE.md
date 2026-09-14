@@ -35,6 +35,80 @@ Il baseline supportato e Python 3.12. I test Python ordinari non richiedono Coq;
 la parte Coq/SQIR richiede invece Linux o WSL e l'ambiente opam descritto nella
 [guida di sviluppo](DEVELOPMENT.md#coq-environment).
 
+## Percorso collaudato e risultati attesi
+
+Questa sequenza e stata eseguita con successo su PowerShell in Windows. Serve
+come scaletta pronta da copiare durante la presentazione. I conteggi campionati
+possono variare leggermente; sono corretti quando ogni controllo termina con
+`[PASS]` e il risultato complessivo e `PASS`.
+
+Attivare prima l'ambiente:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\.venv\Scripts\Activate.ps1
+```
+
+Verificare Bell con campionamento riproducibile:
+
+```powershell
+fqv-verify --shots 10000 --seed 42
+```
+
+Risultato atteso: `Overall result: PASS`, fedelta esatta pari a `1`, probabilita
+esatte `0.5` per `00` e `11`, e frequenze campionate vicine a `0.5`. Con seed
+`42`, l'esecuzione collaudata ha osservato `5015/10000` per `00` e `4985/10000`
+per `11`.
+
+Mostrare il controesempio di fase:
+
+```powershell
+fqv-demo-phase
+```
+
+Risultato atteso: `Measurement probabilities: PASS` e
+`Exact quantum state: FAIL`. In questa demo `FAIL` e il comportamento voluto:
+il programma termina con codice zero solo se il contratto esatto rifiuta la fase
+relativa errata.
+
+Verificare gli altri casi studio:
+
+```powershell
+fqv-verify --ir examples/ghz3_ir.json --contract src/fqv/data/ghz3.contract.json
+fqv-verify --ir examples/dj2_constant_ir.json --contract src/fqv/data/dj2_constant.contract.json
+fqv-verify --ir examples/dj2_balanced_ir.json --contract src/fqv/data/dj2_balanced.contract.json
+```
+
+Risultato atteso: tutti e tre mostrano `Overall result: PASS` e fedelta `1`.
+Un errore massimo dell'ordine di `2.22e-16` e normale arrotondamento numerico,
+non un fallimento.
+
+Dopo avere generato `build/ShowoffDuplicateH.lean` con la demo di ottimizzazione
+descritta sotto, farlo controllare dal kernel Lean e rendere visibile il suo
+codice di uscita:
+
+```powershell
+lake env lean build/ShowoffDuplicateH.lean
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "PASS: Lean ha verificato formalmente il certificato" -ForegroundColor Green
+} else {
+    Write-Host "FAIL: Lean ha rifiutato il certificato" -ForegroundColor Red
+}
+```
+
+Lean normalmente non stampa nulla quando accetta un singolo file. Il ritorno al
+prompt con codice `0`, reso esplicito dal messaggio verde, e il risultato atteso.
+
+Infine controllare tutto lo sviluppo Lean incluso nel repository:
+
+```powershell
+lake build
+```
+
+Risultato atteso: `Build completed successfully`. Il numero di job mostrato puo
+cambiare con la versione del progetto e lo stato della cache; non fa parte della
+specifica della demo.
+
 ## Demo essenziale: Bell in due minuti
 
 Il comando senza argomenti usa il circuito e il contratto Bell inclusi nel
@@ -100,7 +174,15 @@ Con Lean gia predisposto, compilare l'obbligo appena generato:
 
 ```powershell
 lake env lean build/ShowoffDuplicateH.lean
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "PASS: Lean ha verificato formalmente il certificato" -ForegroundColor Green
+} else {
+    Write-Host "FAIL: Lean ha rifiutato il certificato" -ForegroundColor Red
+}
 ```
+
+L'assenza di output da `lean` indica normalmente successo, non un blocco. Il
+messaggio aggiunto rende l'esito immediatamente leggibile al pubblico.
 
 Lo stesso certificato puo generare un modulo Coq:
 
