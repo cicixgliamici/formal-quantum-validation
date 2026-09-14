@@ -68,7 +68,7 @@ measurements or other operations that cannot be converted to `Operator`.
 The result is executable equivalence evidence produced by Qiskit and NumPy; it
 is not by itself a proof that the transpiler is semantics-preserving.
 
-## Exact rewrite certificate proof of concept
+## Exact rewrite certificate
 
 The optional certificate path connects one deliberately small Qiskit
 optimization to both formal backends. It currently recognizes only removal of
@@ -91,10 +91,17 @@ every input state. Select `--transpilation-proof-backend coq` and a `.v` output
 to generate the analogous exact equality between complete SQIR operators.
 Generation is not proof acceptance: run Lean or Coq on the emitted module.
 
+```powershell
+lake env lean build/GeneratedDuplicateHTranspilation.lean
+```
+
 Both formal generators deterministically replay the certificate before writing
 an obligation. An unknown optimization or a mutated step fails closed. This is
 intentionally a proof of one recognized rewrite trace, not a claim that all
-Qiskit transpiler passes are verified.
+Qiskit transpiler passes are verified. The Python unit test checks recognition,
+serialization, deterministic replay, and mutated-trace rejection. Separate
+Lean and Coq integration tests require each generated formal obligation to be
+accepted by its kernel.
 
 Hardware routing is deferred. A physical backend may introduce extra ancilla
 qubits, native parameterized gates, and non-trivial initial/final layouts.

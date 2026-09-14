@@ -127,7 +127,9 @@ fqv-verify --ir examples/dj2_balanced_ir.json --contract src/fqv/data/dj2_balanc
 
 - Bell evidenzia la differenza tra ampiezze/stato e sole probabilita di misura.
 - GHZ(3) mostra un obbligo generato piu grande; Lean contiene anche il teorema
-  parametrico per la famiglia GHZ(n) non vuota.
+  parametrico per la famiglia GHZ(n) non vuota. Il primo usa la catena CNOT
+  `0 -> 1 -> 2` e una prova sugli otto stati di base; il secondo usa fan-out dal
+  qubit zero e induzione per ogni dimensione positiva.
 - Deutsch-Jozsa mostra due istanze fisse: oracolo costante zero e oracolo
   bilanciato `f(x0, x1) = x0`.
 
@@ -223,6 +225,28 @@ non l'oggetto Qiskit originale; le prove generate a dimensione fissa scalano
 esponenzialmente. La [guida alla presentazione](PRESENTATION_GUIDE.md) e il
 [confine di fiducia](TRUST_BOUNDARY.md) contengono la formulazione rigorosa delle
 affermazioni.
+
+## Come spiegare il termine contratto
+
+Il file JSON dichiara la specifica: precondizione, postcondizione e controlli
+osservabili. Non e, da solo, una prova. `fqv-verify` esegue il circuito ideale e
+fornisce evidenza numerica per lo stato iniziale e le tolleranze dichiarate. La
+compilazione del teorema Lean o Coq fornisce invece una prova kernel-checked
+dell'uguaglianza esatta generata dal contratto.
+
+La lettura in stile Hoare e `{ stato = psi } circuito { stato = phi }`. Per la
+corrispondenza Curry-Howard, questa uguaglianza e una proposizione e la prova e
+un termine controllato dal kernel. Il progetto non implementa ancora una
+Quantum Hoare Logic completa: non usa predicati quantistici generali su matrici
+di densita e non tratta misure, rami classici o cicli. Il modello attuale e un
+frammento pre/post per stati puri e circuiti unitari finiti.
+
+Per presentare Coq, sottolineare che SQIR significa Small Quantum Intermediate
+Representation: e un linguaggio formale tipato per circuiti unitari, dotato di
+semantica matriciale completa. Il backend abbassa l'IR condiviso a SQIR, prova
+che i circuiti ben formati diventano programmi SQIR ben tipati e usa QuantumLib
+per dimostrare le uguaglianze esatte. Non si tratta quindi di una seconda
+simulazione numerica.
 
 ## Riferimento rapido della CLI
 

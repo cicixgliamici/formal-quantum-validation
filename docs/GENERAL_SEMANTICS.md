@@ -16,6 +16,41 @@ This document describes the native Lean model. The independent lowering to
 SQIR and its Coq well-typedness result are documented in
 [Coq and SQIR semantics](COQ_SQIR.md).
 
+## Lean syntax used in this project
+
+The formalization uses a compact subset of Lean:
+
+- `abbrev` introduces a transparent abbreviation. `Basis n` means
+  `Fin n -> Bool`, and `State n` means a function from basis assignments to
+  complex amplitudes.
+- `def` introduces a definition, while `noncomputable def` marks a mathematical
+  definition that Lean is not expected to compile into executable code. Exact
+  square roots and complex amplitudes require this distinction.
+- `inductive Gate` declares the supported gate syntax. Its constructors carry
+  operands and, for CNOT/SWAP, a proof that the two operands differ.
+- `Fin n` is the type of natural numbers smaller than `n`. Using it for qubit
+  operands makes an out-of-range formal gate unrepresentable.
+- `fun basis => ...` defines a function, and `match` or `if` selects its value
+  by cases. States are functions, so circuit semantics ultimately computes one
+  amplitude for each `basis`.
+- `theorem name : proposition := by ...` states a proposition and begins a
+  tactic proof. Lean accepts the declaration only after its kernel validates
+  the constructed proof term.
+- `@[simp]` registers a proved equality for controlled simplification. `simp`
+  then rewrites with definitions and such lemmas; it does not bypass proof
+  checking.
+- `funext` reduces equality of two state functions to pointwise equality;
+  `induction` proves a statement for every recursively constructed size or
+  list; `rfl` closes definitional equalities; `rw` applies proved equalities.
+- Terms such as `(by decide)` are proofs produced by a decision procedure, for
+  example that two concrete qubit indices differ. The resulting proof term is
+  still checked by the kernel.
+
+The key semantic functions are `Gate.apply`, which maps one input state to the
+state after one gate, and `denote`, which uses `List.foldl` to apply every gate
+from left to right. Reading generated correctness theorems as
+`denote circuit input = target` is enough to understand their main claim.
+
 ## Gate operands
 
 Single-qubit gates accept a target in `Fin n`. CNOT and SWAP additionally carry
@@ -67,6 +102,17 @@ The circuit, input, target, and theorem are generated from
 `examples/ghz3_ir.json` and `src/fqv/data/ghz3.contract.json`. Lean checks the
 resulting theorem without `sorry`.
 
+This fixed circuit uses a **CNOT chain**:
+
+```text
+H(0); CNOT(0, 1); CNOT(1, 2)
+```
+
+Its circuit, eight input amplitudes, eight target amplitudes, and theorem are
+generated mechanically from JSON. The proof establishes function equality by
+examining all `2^3` basis assignments. This makes GHZ(3) a concrete end-to-end
+regression for IR validation, generation, bit ordering, and gate semantics.
+
 ## Parametric GHZ family
 
 The formal development also defines `ghzCircuit n` for every `n > 0`. It uses
@@ -81,6 +127,34 @@ The proof is inductive in the number of fan-out gates. It does not enumerate
 the `2^n` basis assignments. Qiskit contains the matching parametric circuit
 constructor, while the original GHZ(3) CNOT chain remains an independent
 fixed-size regression.
+
+The distinction is therefore both structural and proof-theoretic:
+
+| Aspect | Fixed GHZ(3) | Parametric GHZ(n) |
+| --- | --- | --- |
+| Circuit topology | Chain: `0 -> 1 -> 2` | Fan-out: `0 -> 1, 0 -> 2, ..., 0 -> n-1` |
+| Source | Generated from IR and contract JSON | Written as reusable Lean definitions |
+| Register size | Exactly three qubits | Every nonempty finite `n` |
+| Proof method | Enumerates all eight basis assignments | Induction over the fan-out gates |
+| Main purpose | End-to-end generator regression | Universal mathematical family theorem |
+
+Both topologies prepare the same GHZ state from the all-zero input. GHZ(3) is
+not merely the `n = 3` file emitted from `ghzCircuit`: it intentionally uses a
+different CNOT arrangement. Lean also derives `ghz_three_correct` by setting
+`n = 3` in the parametric theorem, so the repository contains two independent
+routes to a three-qubit GHZ result.
+
+The main parametric definitions and lemmas form a short proof pipeline:
+
+- `prefixBasis count` describes the basis assignment whose first `count`
+  qubits are one;
+- `ket assignment` constructs the basis state concentrated at that assignment;
+- `ghzPrefix count` states the invariant after entangling a prefix;
+- `ghzFanout` recursively builds CNOTs from qubit zero;
+- `hadamard_zero_starts_ghz` establishes the first two-branch superposition;
+- `fanoutGate_advances` proves one inductive step;
+- `ghzFanout_correct` repeats that step by induction;
+- `ghz_correct` combines the Hadamard base case with the complete fan-out.
 
 ## Remaining proof work
 
@@ -98,3 +172,15 @@ The formal squared norm is the real part of the self-inner-product. Lean proves
 that every supported gate and every supported circuit preserves this norm.
 Consequently, a circuit maps every normalized input state to a normalized
 output state.
+
+## Hadamard cancellation
+
+`lean/QuantumValidation/Transpilation.lean` proves `h_apply_twice`: applying
+Hadamard twice on any valid target returns every finite state unchanged. The
+derived `duplicate_h_transpilation_correct` theorem lifts this identity to
+`CircuitEquivalent [.h target, .h target] []`, which quantifies over every
+input state and every register size for which the target exists.
+
+Generated transpilation obligations instantiate this result only after the
+certificate trace has been replayed against its checked source and candidate
+IR. This proves the accepted `H; H` rewrite, not other Qiskit optimizations.

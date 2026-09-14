@@ -11,6 +11,7 @@ Currently verified:
 - the full nonempty GHZ(n) family in Lean;
 - unitarity and normalization preservation for every supported circuit in Lean;
 - preservation from well-formed Coq circuits to SQIR `uc_well_typed` programs.
+- exact Lean and Coq/SQIR certificates for adjacent `H; H` cancellation.
 
 The supported IR contains `I`, `X`, `Z`, `H`, `CNOT`, and `SWAP`.
 

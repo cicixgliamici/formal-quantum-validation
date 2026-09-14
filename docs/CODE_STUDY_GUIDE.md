@@ -110,20 +110,37 @@ Study exercise:
 2. Find where global phase is accepted.
 3. Explain why exact and sampled tolerances differ.
 
-## 6. Understand transformation evidence
+## 6. Understand transformation evidence and certification
 
-Read `src/fqv/pipeline/transpilation.py`.
+Read:
+
+- `src/fqv/pipeline/transpilation.py`;
+- `src/fqv/pipeline/transpilation_certificate.py`;
+- `src/fqv/domain/transpilation.py`;
+- `src/fqv/backend/lean/transpilation.py`;
+- `src/fqv/backend/coq/transpilation.py`;
+- `lean/QuantumValidation/Transpilation.lean`.
 
 The source and transpiled circuits are compared as complete operators, not only
 on the contract input. One-input comparison would incorrectly accept distinct
 operators that happen to agree on that input. The matrix error removes one
 global phase but preserves every relative phase difference.
 
+The exact certificate path is separate from that numerical report. It
+recognizes a circuit change made solely of adjacent `H; H` cancellations,
+records each `cancel_h_h` position, and deterministically replays the trace.
+Lean then proves `CircuitEquivalent`, quantified over every input state. The
+Coq backend proves equality of the complete SQIR operators. Any other rewrite,
+or a trace that does not reconstruct the candidate IR, is rejected.
+
 Study exercise:
 
 1. Explain why the transpiler seed is part of the report.
 2. Explain why process fidelity is paired with entry-wise error.
 3. State clearly why this report is evidence rather than a Lean proof.
+4. Trace `examples/duplicate_h_ir.json` through certificate recognition and
+   deterministic replay.
+5. Explain why certifying `H; H` does not certify arbitrary Qiskit passes.
 
 ## 7. Follow generation into the formal backends
 
@@ -139,12 +156,20 @@ the output, but Python generation remains in the trusted computing base.
 Generated Bell and GHZ(3) proofs enumerate fixed bases; GHZ(n) uses a separate
 inductive proof.
 
+Before reading the long proofs, use the language summaries in
+[general Lean semantics](GENERAL_SEMANTICS.md#lean-syntax-used-in-this-project)
+and [Coq/SQIR semantics](COQ_SQIR.md#coq-syntax-used-in-this-project). They
+explain the small set of declarations, types, and tactics needed to distinguish
+definitions from propositions and proof automation from kernel acceptance.
+
 Study exercise:
 
 1. Trace one IR CNOT into its generated Lean constructor.
 2. Explain why `(by decide)` is still useful after Python validation.
 3. Distinguish generator correctness from kernel checking.
 4. State the exact theorem proved for GHZ(n).
+5. Compare the generated GHZ(3) CNOT chain with the parametric GHZ(n) fan-out
+   and explain why their proofs use enumeration and induction respectively.
 
 Then read:
 
@@ -203,6 +228,12 @@ raw IR
   -> executable checks
   -> optional transpilation evidence
 
+source IR + candidate IR
+  -> recognized H;H rewrites
+  -> replayable certificate
+  +-> Lean all-input equivalence -> Lean kernel
+  +-> Coq/SQIR operator equality -> Coq kernel
+
 raw IR + raw contract
   +-> Lean generator -> generated theorem -> Lean kernel
   +-> Coq generator -> Circuit.v -> SQIR theorem -> Coq kernel
@@ -221,3 +252,5 @@ Before presenting, be able to answer:
    what translator-correctness result is still absent?
 7. Why are Bell and fixed GHZ examples regressions rather than universal
    correctness claims?
+8. Which part of the transpilation path is formally certified, and which part
+   remains numerical evidence?

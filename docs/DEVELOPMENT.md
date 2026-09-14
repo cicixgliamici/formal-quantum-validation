@@ -158,6 +158,44 @@ fqv-verify `
 mathlib together; using mismatched releases is unsupported. The formal
 development contains no project `sorry`, `axiom`, or `opaque` declaration.
 
+### Exact `H; H` transpilation certificate
+
+The formally certified path currently supports one rewrite: cancellation of
+two adjacent Hadamard gates on the same qubit. Generate the checked endpoints,
+replayable certificate, and Lean obligation with:
+
+```powershell
+fqv-verify `
+  --ir examples/duplicate_h_ir.json `
+  --contract examples/duplicate_h.contract.json `
+  --transpile `
+  --optimization-level 1 `
+  --seed-transpiler 7 `
+  --transpiled-ir-output build/duplicate_h_transpiled.json `
+  --equivalence-report build/duplicate_h_equivalence.json `
+  --transpilation-certificate build/duplicate_h_certificate.json `
+  --transpilation-proof-output build/GeneratedDuplicateHTranspilation.lean
+
+lake env lean build/GeneratedDuplicateHTranspilation.lean
+```
+
+Use `--transpilation-proof-backend coq` with a `.v` output to produce the SQIR
+operator-equality obligation. Both generators replay the certificate before
+writing. Unsupported optimizations and mutated traces fail closed. The Python,
+Lean, and Coq vertical slices are covered independently:
+
+```powershell
+python -m pytest tests/test_transpilation_certificate.py -v
+python -m pytest integration_tests/test_transpilation_certificate.py -v
+```
+
+```bash
+opam exec -- python -m pytest coq_tests/test_transpilation_certificate.py -v
+```
+
+These checks certify the recorded `H; H` rewrite, not arbitrary transpilation.
+Generated demonstration artifacts belong in `build/` and are not committed.
+
 ## Running the prototype
 
 After installing the Python project:

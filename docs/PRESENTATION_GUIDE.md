@@ -18,11 +18,13 @@ kernel-checked Lean and Coq/SQIR proof obligations.
    and result explicit.
 3. Qiskit supplies executable state, probability, resource, and transpilation
    evidence.
-4. Lean checks a native finite semantics, fixed examples, a parametric GHZ
+4. A replayable certificate turns the recognized `H; H -> I` rewrite into
+   all-input Lean equality and complete SQIR operator equality.
+5. Lean checks a native finite semantics, fixed examples, a parametric GHZ
    theorem, and preservation of inner products and normalization.
-5. Coq lowers the shared gate language to SQIR, proves well-formed compilation,
+6. Coq lowers the shared gate language to SQIR, proves well-formed compilation,
    and checks generated exact-state obligations with QuantumLib semantics.
-6. CI binds inputs, generators, generated artifacts, proof assistants, negative
+7. CI binds inputs, generators, generated artifacts, proof assistants, negative
    mutations, and cross-system semantic regressions.
 
 ## End-to-end view
@@ -45,7 +47,7 @@ Qiskit circuit <-> checked IR + exact contract
 | Supported Lean circuits preserve inner products and normalization | General Lean theorems | Applies to the formal gate language |
 | Coq lowering preserves structural validity | Generated well-formedness proofs and `circuit_well_formed_compile_preservation` | Does not verify correspondence with Qiskit |
 | Transpilation preserves the complete operator in tested runs | Qiskit process fidelity and phase-adjusted matrix error | Numerical evidence, not a proof of the transpiler |
-| Adjacent `H; H` elimination preserves semantics | Generated Lean all-input equality and Coq/SQIR operator equality | Certificate PoC for one exact rewrite rule, not arbitrary transpilation |
+| Adjacent `H; H` elimination preserves semantics | Generated Lean all-input equality and Coq/SQIR operator equality | Exact certificate for one rewrite rule, not arbitrary transpilation |
 | Gate conventions agree across boundaries for tested cases | Lean Qiskit-derived and Coq independent-basis regressions | Finite coverage; Coq reaches three qubits for I/X/Z/CNOT and two for H/SWAP |
 | Qiskit DJ reaches Coq end to end | Direct builder-to-extractor-to-generator-to-`coqc` tests | Two fixed DJ variants |
 
@@ -54,7 +56,9 @@ Qiskit circuit <-> checked IR + exact contract
 - Bell demonstrates why exact amplitude comparison detects relative phase that
   computational-basis probabilities miss.
 - GHZ(3) exercises a larger generated obligation; GHZ(n) demonstrates induction
-  beyond finite enumeration.
+  beyond finite enumeration. The fixed example uses a three-qubit CNOT chain,
+  while the parametric theorem uses a qubit-zero fan-out for every nonempty
+  size; both prepare the same target from the all-zero state.
 - Deutsch-Jozsa uses asymmetric states to test bit ordering and includes
   constant and balanced fixed oracles plus negative relative-phase mutations.
 
@@ -68,14 +72,36 @@ models, Qiskit, Python, extraction, generation, toolchains, and correspondence
 between external circuits and formal definitions remain trusted to the extent
 described in `TRUST_BOUNDARY.md`. Tests reduce this risk but do not eliminate it.
 
+## How to explain the contract
+
+The JSON file is the specification, not the proof. `fqv-verify` supplies
+numerical evidence that the Qiskit execution satisfies it for the declared
+input and tolerances. A Lean or Coq kernel accepting the generated exact
+equality supplies formal evidence for the state-correctness fragment.
+
+In Hoare notation the current contract resembles
+`{ state = psi } circuit { state = phi }`. Through Curry-Howard, the formal
+postcondition becomes a proposition and its proof becomes a term checked by
+the kernel. This is narrower than a full Quantum Hoare Logic: the project does
+not yet use quantum predicates over density operators or provide rules for
+measurement, branching, and loops. See the
+[contract format](CONTRACT_FORMAT.md#specification-numerical-check-and-formal-contract)
+for the precise distinction.
+
 ## Suggested live demonstration
 
 From a prepared development environment:
 
 ```powershell
-python -m pytest
 fqv-verify --ir examples/bell_ir.json --contract src/fqv/data/bell.contract.json
-lake build
+fqv-verify `
+  --ir examples/duplicate_h_ir.json `
+  --contract examples/duplicate_h.contract.json `
+  --transpile `
+  --optimization-level 1 `
+  --transpilation-certificate build/duplicate_h_certificate.json `
+  --transpilation-proof-output build/GeneratedDuplicateHTranspilation.lean
+lake env lean build/GeneratedDuplicateHTranspilation.lean
 ```
 
 On Linux or WSL with the pinned Coq environment:
@@ -84,13 +110,21 @@ On Linux or WSL with the pinned Coq environment:
 opam exec -- python -m pytest coq_tests/test_coq_compilation.py -v
 ```
 
-Show one generated theorem and one deliberately rejected mutation. This makes
-the distinction between successful generation and kernel acceptance visible.
+Show the depth reduction from two gates to zero, the self-contained JSON
+certificate, and the generated theorem before compiling it. A deliberately
+rejected mutation then makes the distinction between successful generation and
+kernel acceptance visible.
 
 ## Questions to anticipate
 
 - Why use two proof assistants? They provide independent semantic paths: a
   compact native Lean model and an established SQIR/QuantumLib Coq backend.
+- What is SQIR? It is Coq's Small Quantum Intermediate Representation: a typed
+  unitary circuit language with complete matrix semantics, used as the formal
+  target of the Coq lowering.
+- Is GHZ(3) just the `n = 3` parametric circuit? No. The generated regression
+  uses a CNOT chain; the universal theorem uses fan-out and induction. Lean
+  proves both routes reach the corresponding GHZ state.
 - Is the translator verified? No. Validation, drift checks, cross-system tests,
   and negative tests provide evidence, but translator correctness remains open.
 - Why exact amplitude tokens? They prevent decimal approximations from becoming
@@ -99,6 +133,11 @@ the distinction between successful generation and kernel acceptance visible.
   can differ while measurement probabilities in one basis remain identical.
 - Does operator equivalence certify hardware execution? No. Current checks use
   ideal unitary semantics and defer noise and physical-layout policies.
+- Is the JSON contract already a formal proof? No. It states the obligation;
+  numerical execution tests it, while kernel acceptance proves the generated
+  exact equality.
+- Is this a complete Quantum Hoare Logic? No. It is a concrete pure-state
+  pre/post fragment, with separate general theorems for selected properties.
 
 ## Honest limitations and next steps
 

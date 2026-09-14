@@ -53,3 +53,12 @@ or measurement property. Those belong to a separate contract format. A stored
 global phase is unsupported, rather than being transferred to the contract.
 Keeping circuits and specifications separate prevents structural data from
 being mistaken for a correctness claim.
+
+## Transpilation certificate endpoints
+
+The exact `H; H` rewrite certificate embeds a source IR and candidate IR using
+these same conventions. Both are validated independently before certificate
+recognition. Each recorded `cancel_h_h` step identifies the position and target
+of one adjacent pair, and deterministic replay must reconstruct the candidate
+exactly. The certificate adds transformation provenance without extending IR
+version `0.1` or weakening its export rules.

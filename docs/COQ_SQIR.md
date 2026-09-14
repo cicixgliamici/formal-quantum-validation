@@ -4,6 +4,66 @@ The Coq backend provides an independent formal path from the shared circuit IR
 and contract format to SQIR and QuantumLib. It complements the native Lean
 semantics; neither backend is treated as an oracle for the other.
 
+## What SQIR provides
+
+SQIR stands for **Small Quantum Intermediate Representation**. It is a
+formally defined circuit language for Coq, designed to make quantum programs
+small enough to reason about while retaining precise typing and mathematical
+semantics. In this project SQIR is the central semantic target of the Coq
+backend, not merely a serialization format.
+
+The relevant SQIR concepts are:
+
+- `base_ucom dim`, the type of unitary commands over a register of `dim`
+  qubits;
+- operations such as `H`, `X`, `Rz`, and `CNOT`, together with sequential
+  composition `;`;
+- `uc_well_typed`, the proposition that every referenced qubit is valid and
+  multi-qubit operands satisfy SQIR's structural requirements;
+- `uc_eval`, the denotational semantics that maps a unitary command to its
+  complete `2^dim` by `2^dim` matrix;
+- the QuantumLib matrix library and tactics used to reduce exact matrix
+  equalities to scalar equalities.
+
+The project first represents the shared IR with its own small `Gate` language,
+then `compile_gate` and `compile_circuit` lower that language to `base_ucom`.
+This separation exposes a reviewable compiler boundary. The preservation
+theorem proves that a well-formed source circuit becomes a well-typed SQIR
+program, while correctness obligations use `uc_eval` to state exact behavior.
+
+SQIR is particularly valuable here because Coq checks both the structural
+argument and the resulting matrix proof. The implementation therefore reuses
+an established formal quantum IR instead of asking reviewers to trust a second
+ad hoc Python matrix simulator.
+
+## Coq syntax used in this project
+
+A reviewer only needs a small part of the language to follow the development:
+
+- `Inductive Gate ... := ...` declares an algebraic data type. Each constructor
+  (`GateH`, `GateCNOT`, and so on) is one possible gate value.
+- `Definition` introduces a named term without recursion. It defines
+  `Circuit`, validity predicates, individual gate lowering, and `run`.
+- `Fixpoint` defines structurally recursive functions. `compile_circuit`
+  recursively lowers an ordered gate list and is accepted because each call
+  consumes the remaining list.
+- `match value with ... end` performs case analysis on a gate or list.
+- `Prop` is the universe of propositions. `gate_well_formed` and
+  `uc_well_typed` are properties to prove rather than Boolean runtime checks.
+- `Lemma` and `Theorem` introduce proof obligations. `Proof. ... Qed.` encloses
+  the tactic script and stores the kernel-checked result.
+- `Ltac` defines proof automation. `solve_circuit` constructs proof terms by
+  unfolding the lowering, evaluating SQIR matrices, and solving exact scalar
+  equations; the tactic itself is not added as an axiom.
+- Implicit parameters in braces, such as `{dim : nat}`, let Coq infer the
+  register dimension from surrounding terms.
+
+Common proof commands are also local and readable: `intros` introduces
+hypotheses, `destruct` and `induction` split data into cases, `apply` uses a
+known implication or theorem, `exact` supplies the required term, and `cbn`,
+`simpl`, or `rewrite` reduce definitions and equalities. The final authority is
+always the proof term checked at `Qed`, not the tactic transcript.
+
 ## Formal representation
 
 `coq/QuantumValidation/Circuit.v` defines `Gate dim` with constructors for `I`,
@@ -70,6 +130,23 @@ Both tactics rewrite `phase_shift PI` with `phase_pi`. SQIR lowers public Z to
 `Rz PI`, whose evaluated matrix is otherwise left in phase-shift form by the
 generic simplifier.
 
+## Certified `H; H` cancellation
+
+The Coq transpilation backend consumes the backend-neutral exact-rewrite
+certificate. Before generating Coq, Python deterministically replays every
+`cancel_h_h` step and requires the reconstructed circuit to match the checked
+candidate IR. The emitted theorem compares complete SQIR operators:
+
+```coq
+run duplicate_h_transpilation_source =
+  run duplicate_h_transpilation_candidate
+```
+
+`solve_circuit` proves the equality by reducing the two Hadamard applications.
+This result covers every input state because it is an operator equality. It
+certifies the recorded cancellation trace only; it does not verify Qiskit's
+general optimization pipeline or the Python recognizer.
+
 ## Validation strategy
 
 The Coq CI job provides complementary evidence:
@@ -82,7 +159,9 @@ The Coq CI job provides complementary evidence:
 - 14 empty-circuit obligations check identity behavior, and 3 additional cases
   exercise negative and imaginary amplitude serialization;
 - both DJ Qiskit builders pass directly through extraction and Coq generation
-  before `coqc` checks the resulting theorem.
+  before `coqc` checks the resulting theorem;
+- the generated adjacent-`H; H` operator equality must compile, while a mutated
+  certificate must be rejected before generation;
 - an invalid repeated-operand CNOT is proved neither source-well-formed nor
   SQIR-well-typed.
 

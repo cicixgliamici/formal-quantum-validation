@@ -55,6 +55,15 @@ The generator remains trusted to preserve the meaning of IR and contract
 fields. Its validation and regression tests reduce this risk but do not turn
 the Python generator itself into verified software.
 
+The contract document is a specification, not a certificate. The executable
+checker supplies numerical evidence under its tolerances and trusted runtime.
+Kernel acceptance supplies formal evidence only for the exact semantic
+statement emitted into Lean or Coq. This distinction follows the
+Curry-Howard view of a checked proof term inhabiting the proposition, while the
+contract's pre/post structure is a concrete pure-state analogue of a Hoare
+triple. The project does not currently implement a general quantum-predicate
+Hoare logic over density operators.
+
 ## Coq/SQIR regression
 
 Generated clients use `QuantumValidation.Circuit`: public gate constructors,
@@ -102,7 +111,7 @@ Qiskit, NumPy, the selected transpiler passes, and the numerical equivalence
 threshold remain trusted. The numerical report alone is not a Lean or Coq
 certificate that Qiskit's transpiler preserves semantics.
 
-The separate exact-rewrite proof of concept narrows this limitation for
+The separate exact-rewrite certificate narrows this limitation for
 circuits reduced solely by adjacent `H; H` cancellation. A backend-neutral JSON
 certificate embeds both checked IR endpoints and the rewrite positions. Lean
 checks equality for every input state; Coq checks equality of complete SQIR
