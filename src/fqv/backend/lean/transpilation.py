@@ -5,7 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from fqv.backend.lean.generator import GeneratedLeanModule, _format_gate, _lean_identifier
-from fqv.domain.transpilation import TranspilationCertificate, certify_h_cancellations
+from fqv.domain.transpilation import (
+    TranspilationCertificate,
+    certify_self_inverse_cancellations,
+)
 
 
 def _format_circuit(certificate: TranspilationCertificate, *, source: bool) -> str:
@@ -15,12 +18,29 @@ def _format_circuit(certificate: TranspilationCertificate, *, source: bool) -> s
     return ", ".join(_format_gate(operation) for operation in circuit.operations)
 
 
+def _rewrite_lemmas(certificate: TranspilationCertificate) -> str:
+    """Include exactly the lemmas used, keeping generated Lean warning-free."""
+
+    names = {
+        "X": "x_involutive",
+        "Z": "z_involutive",
+        "H": "h_apply_twice",
+        "CNOT": "cnot_involutive",
+        "SWAP": "swap_involutive",
+    }
+    return ",\n    ".join(
+        dict.fromkeys(names[step.gate.value] for step in certificate.steps)
+    )
+
+
 def generate_transpilation_lean_module(
     certificate: TranspilationCertificate,
 ) -> GeneratedLeanModule:
     """Emit an all-input equivalence theorem after replaying the certificate."""
 
-    replayed = certify_h_cancellations(certificate.source, certificate.candidate)
+    replayed = certify_self_inverse_cancellations(
+        certificate.source, certificate.candidate
+    )
     if replayed.steps != certificate.steps:
         raise ValueError("certificate steps do not match deterministic replay")
 
@@ -31,9 +51,10 @@ def generate_transpilation_lean_module(
     source_gates = _format_circuit(certificate, source=True)
     candidate_gates = _format_circuit(certificate, source=False)
     steps = ", ".join(
-        f"{step.rule}@{step.position}(q{step.target})"
+        f"{step.rule}:{step.gate.value}@{step.position}"
         for step in certificate.steps
     )
+    rewrite_lemmas = _rewrite_lemmas(certificate)
 
     source = f"""import QuantumValidation.Transpilation
 
@@ -61,7 +82,7 @@ theorem {theorem_name} :
     {source_name},
     {candidate_name},
     denote,
-    h_apply_twice
+    {rewrite_lemmas}
   ]
 
 end General

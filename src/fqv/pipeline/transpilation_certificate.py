@@ -9,11 +9,13 @@ from fqv.domain.transpilation import (
     TranspilationCertificate,
     UnsupportedTranspilationError,
     certify_h_cancellations,
+    certify_self_inverse_cancellations,
 )
 
 __all__ = [
     "UnsupportedTranspilationError",
     "certify_h_cancellations",
+    "certify_self_inverse_cancellations",
     "write_transpilation_certificate",
 ]
 

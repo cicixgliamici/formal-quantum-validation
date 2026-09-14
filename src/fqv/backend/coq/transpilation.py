@@ -5,7 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from fqv.backend.coq.generator import GeneratedCoqModule, _coq_identifier, _format_gate
-from fqv.domain.transpilation import TranspilationCertificate, certify_h_cancellations
+from fqv.domain.transpilation import (
+    TranspilationCertificate,
+    certify_self_inverse_cancellations,
+)
 
 
 def _format_circuit(certificate: TranspilationCertificate, *, source: bool) -> str:
@@ -20,7 +23,9 @@ def generate_transpilation_coq_module(
 ) -> GeneratedCoqModule:
     """Emit a concrete complete-operator equality checked through SQIR."""
 
-    replayed = certify_h_cancellations(certificate.source, certificate.candidate)
+    replayed = certify_self_inverse_cancellations(
+        certificate.source, certificate.candidate
+    )
     if replayed.steps != certificate.steps:
         raise ValueError("certificate steps do not match deterministic replay")
 

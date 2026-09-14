@@ -11,8 +11,13 @@ from qiskit import QuantumCircuit
 from fqv.backend.coq.transpilation import generate_transpilation_coq_module
 from fqv.backend.lean.transpilation import generate_transpilation_lean_module
 from fqv.domain.transpilation import TranspilationStep, UnsupportedTranspilationError
+from fqv.ir.checked import GateName
+from fqv.ir.validation import check_ir
 from fqv.pipeline.transpilation import TranspilationConfig, transpile_check_and_certify
-from fqv.pipeline.transpilation_certificate import write_transpilation_certificate
+from fqv.pipeline.transpilation_certificate import (
+    certify_self_inverse_cancellations,
+    write_transpilation_certificate,
+)
 
 
 def _duplicate_h_circuit() -> QuantumCircuit:
@@ -32,7 +37,9 @@ def test_qiskit_duplicate_h_produces_formal_obligations() -> None:
 
     assert report.passed
     assert not transpiled.data
-    assert certificate.steps == (TranspilationStep("cancel_h_h", 0, 0),)
+    assert certificate.steps == (
+        TranspilationStep("cancel_self_inverse", 0, GateName.H, (0,)),
+    )
 
     lean = generate_transpilation_lean_module(certificate)
     coq = generate_transpilation_coq_module(certificate)
@@ -49,7 +56,9 @@ def test_formal_generators_reject_a_mutated_trace() -> None:
     )
     mutated = replace(
         certificate,
-        steps=(TranspilationStep("cancel_h_h", 1, 0),),
+        steps=(
+            TranspilationStep("cancel_self_inverse", 1, GateName.H, (0,)),
+        ),
     )
 
     with pytest.raises(ValueError, match="deterministic replay"):
@@ -76,8 +85,15 @@ def test_certificate_serialization_is_deterministic(tmp_path) -> None:
     ]
     assert payload["candidate"]["operations"] == []
     assert payload["steps"] == [
-        {"position": 0, "rule": "cancel_h_h", "target": 0}
+        {
+            "controls": [],
+            "gate": "H",
+            "position": 0,
+            "rule": "cancel_self_inverse",
+            "targets": [0],
+        }
     ]
+    assert payload["schema_version"] == "0.2"
 
 
 def test_unchanged_circuit_is_outside_the_certificate_catalog() -> None:
@@ -88,3 +104,53 @@ def test_unchanged_circuit_is_outside_the_certificate_catalog() -> None:
             _duplicate_h_circuit(),
             config=TranspilationConfig(optimization_level=0),
         )
+
+
+@pytest.mark.parametrize(
+    ("gate", "operation", "expected_targets", "expected_controls"),
+    [
+        (GateName.X, {"gate": "X", "targets": [0]}, (0,), ()),
+        (GateName.Z, {"gate": "Z", "targets": [0]}, (0,), ()),
+        (GateName.H, {"gate": "H", "targets": [0]}, (0,), ()),
+        (GateName.CNOT, {"gate": "CNOT", "controls": [0], "targets": [1]}, (1,), (0,)),
+        (GateName.SWAP, {"gate": "SWAP", "targets": [0, 1]}, (0, 1), ()),
+    ],
+)
+def test_every_self_inverse_gate_can_be_certified(
+    gate: GateName,
+    operation: dict[str, object],
+    expected_targets: tuple[int, ...],
+    expected_controls: tuple[int, ...],
+) -> None:
+    """Exercise the full rule catalog independently of Qiskit pass choices."""
+
+    source = check_ir(
+        {
+            "schema_version": "0.1",
+            "name": f"duplicate_{gate.value.lower()}",
+            "qubits": 2,
+            "operations": [operation, operation],
+        }
+    )
+    candidate = check_ir(
+        {
+            "schema_version": "0.1",
+            "name": "empty_candidate",
+            "qubits": 2,
+            "operations": [],
+        }
+    )
+
+    certificate = certify_self_inverse_cancellations(source, candidate)
+
+    assert certificate.steps == (
+        TranspilationStep(
+            "cancel_self_inverse",
+            0,
+            gate,
+            expected_targets,
+            expected_controls,
+        ),
+    )
+    assert "CircuitEquivalent" in generate_transpilation_lean_module(certificate).source
+    assert "solve_circuit" in generate_transpilation_coq_module(certificate).source

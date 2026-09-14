@@ -80,7 +80,8 @@ fqv-verify `
   --transpiled-ir-output build/showoff_duplicate_h_ir.json `
   --equivalence-report build/showoff_duplicate_h_equivalence.json `
   --transpilation-certificate build/showoff_duplicate_h_certificate.json `
-  --transpilation-proof-output build/ShowoffDuplicateH.lean
+  --transpilation-proof-output build/ShowoffDuplicateH.lean `
+  --verification-manifest build/showoff_manifest.json
 ```
 
 Il risultato piu comunicativo e `Depth: 2 -> 0`, insieme a process fidelity 1,
@@ -90,7 +91,10 @@ errore allineato in fase vicino a zero e generazione di tre artefatti. Mostrare:
 - `build/showoff_duplicate_h_certificate.json`, che conserva sorgente,
   candidato e passo di riscrittura riproducibile;
 - `build/ShowoffDuplicateH.lean`, che contiene l'obbligo controllabile dal
-  kernel Lean.
+  kernel Lean;
+- `build/showoff_manifest.json`, che lega input, risultati e artefatti tramite
+  hash e dichiara esplicitamente che la prova e stata generata ma non ancora
+  accettata dal kernel.
 
 Con Lean gia predisposto, compilare l'obbligo appena generato:
 
@@ -111,9 +115,22 @@ fqv-verify `
   --transpilation-proof-output build/ShowoffDuplicateH.v
 ```
 
-Questa certificazione e intenzionalmente limitata alla cancellazione di
-Hadamard adiacenti. L'equivalenza numerica gestisce piu casi, ma non va
-presentata come prova formale generale del transpiler.
+Questa certificazione e intenzionalmente limitata alla cancellazione di coppie
+adiacenti uguali di porte auto-inverse (`X`, `Z`, `H`, `CNOT`, `SWAP`).
+L'equivalenza numerica gestisce piu casi, ma non va presentata come prova
+formale generale del transpiler.
+
+Per mostrare un errore che le sole probabilita non rilevano:
+
+```powershell
+fqv-demo-phase
+```
+
+Il comando termina con successo quando le probabilita di Bell Phi-minus
+passano rispetto al contratto Phi-plus ma il controllo dello stato esatto
+rifiuta correttamente la fase relativa. La guida dedicata
+[relative-phase demo](PHASE_DEMO.md) mostra l'output completo atteso e spiega
+il codice di uscita.
 
 ## Altri casi studio pronti
 
@@ -214,7 +231,7 @@ Il progetto offre attualmente:
   normalizzazione per il linguaggio supportato;
 - backend Coq/SQIR per gli esempi fissi e prova di buona formazione del lowering;
 - confronto Qiskit dell'operatore completo prima/dopo transpilation;
-- certificato Lean o Coq per la riscrittura esatta `H; H -> I`;
+- certificato Lean o Coq per cancellazioni esatte di porte auto-inverse;
 - regressioni tra Qiskit e i due modelli formali, controlli di drift dei file
   generati e casi negativi che devono essere rifiutati.
 

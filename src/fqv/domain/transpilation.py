@@ -15,7 +15,9 @@ class TranspilationStep:
 
     rule: str
     position: int
-    target: int
+    gate: GateName
+    targets: tuple[int, ...]
+    controls: tuple[int, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         """Return the stable JSON representation shared by formal backends."""
@@ -23,7 +25,9 @@ class TranspilationStep:
         return {
             "rule": self.rule,
             "position": self.position,
-            "target": self.target,
+            "gate": self.gate.value,
+            "targets": list(self.targets),
+            "controls": list(self.controls),
         }
 
 
@@ -34,14 +38,14 @@ class TranspilationCertificate:
     source: CheckedCircuitIr
     candidate: CheckedCircuitIr
     steps: tuple[TranspilationStep, ...]
-    schema_version: str = "0.1"
+    schema_version: str = "0.2"
     equivalence: str = "exact"
 
     def __post_init__(self) -> None:
         """Keep unsupported equivalence notions outside the current PoC."""
 
-        if self.schema_version != "0.1":
-            raise ValueError("only transpilation certificate version '0.1' is supported")
+        if self.schema_version != "0.2":
+            raise ValueError("only transpilation certificate version '0.2' is supported")
         if self.equivalence != "exact":
             raise ValueError("only exact transpilation equivalence is supported")
         if self.source.num_qubits != self.candidate.num_qubits:
@@ -63,21 +67,22 @@ class UnsupportedTranspilationError(ValueError):
     """Report a valid transformation outside the certified rewrite catalog."""
 
 
-def _is_duplicate_h(left: CheckedOperation, right: CheckedOperation) -> bool:
-    """Recognize the first exact rule without depending on Qiskit objects."""
-
-    return (
-        left.gate is GateName.H
-        and right.gate is GateName.H
-        and left.targets == right.targets
-    )
+SELF_INVERSE_GATES = frozenset(
+    {GateName.X, GateName.Z, GateName.H, GateName.CNOT, GateName.SWAP}
+)
 
 
-def certify_h_cancellations(
+def _is_self_inverse_pair(left: CheckedOperation, right: CheckedOperation) -> bool:
+    """Recognize equal adjacent involutions without depending on Qiskit."""
+
+    return left == right and left.gate in SELF_INVERSE_GATES
+
+
+def certify_self_inverse_cancellations(
     source: CheckedCircuitIr,
     candidate: CheckedCircuitIr,
 ) -> TranspilationCertificate:
-    """Build a certificate when leftmost `H; H` cancellation reaches candidate."""
+    """Certify a candidate reached by cancelling adjacent self-inverse gates."""
 
     if source.num_qubits != candidate.num_qubits:
         raise UnsupportedTranspilationError("transpilation changed the qubit count")
@@ -86,10 +91,18 @@ def certify_h_cancellations(
     steps: list[TranspilationStep] = []
     position = 0
     while position + 1 < len(operations):
-        if _is_duplicate_h(operations[position], operations[position + 1]):
-            target = operations[position].targets[0]
+        if _is_self_inverse_pair(operations[position], operations[position + 1]):
+            operation = operations[position]
             del operations[position : position + 2]
-            steps.append(TranspilationStep("cancel_h_h", position, target))
+            steps.append(
+                TranspilationStep(
+                    rule="cancel_self_inverse",
+                    position=position,
+                    gate=operation.gate,
+                    targets=operation.targets,
+                    controls=operation.controls,
+                )
+            )
             # A cancellation can expose a new pair across its left boundary.
             position = max(0, position - 1)
             continue
@@ -97,9 +110,20 @@ def certify_h_cancellations(
 
     if tuple(operations) != candidate.operations:
         raise UnsupportedTranspilationError(
-            "candidate is not obtained solely by certified H; H cancellations"
+            "candidate is not obtained solely by certified self-inverse cancellations"
         )
     if not steps:
-        raise UnsupportedTranspilationError("no certified H; H cancellation was found")
+        raise UnsupportedTranspilationError(
+            "no certified self-inverse cancellation was found"
+        )
 
     return TranspilationCertificate(source, candidate, tuple(steps))
+
+
+def certify_h_cancellations(
+    source: CheckedCircuitIr,
+    candidate: CheckedCircuitIr,
+) -> TranspilationCertificate:
+    """Preserve the 0.1 API name while using the generalized recognizer."""
+
+    return certify_self_inverse_cancellations(source, candidate)

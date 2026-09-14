@@ -127,8 +127,9 @@ operators that happen to agree on that input. The matrix error removes one
 global phase but preserves every relative phase difference.
 
 The exact certificate path is separate from that numerical report. It
-recognizes a circuit change made solely of adjacent `H; H` cancellations,
-records each `cancel_h_h` position, and deterministically replays the trace.
+recognizes a circuit change made solely of adjacent equal self-inverse gate
+cancellations, records each `cancel_self_inverse` gate and its complete
+operands, and deterministically replays the trace.
 Lean then proves `CircuitEquivalent`, quantified over every input state. The
 Coq backend proves equality of the complete SQIR operators. Any other rewrite,
 or a trace that does not reconstruct the candidate IR, is rejected.
@@ -140,7 +141,8 @@ Study exercise:
 3. State clearly why this report is evidence rather than a Lean proof.
 4. Trace `examples/duplicate_h_ir.json` through certificate recognition and
    deterministic replay.
-5. Explain why certifying `H; H` does not certify arbitrary Qiskit passes.
+5. Explain why certifying self-inverse cancellation does not certify arbitrary
+   Qiskit passes.
 
 ## 7. Follow generation into the formal backends
 

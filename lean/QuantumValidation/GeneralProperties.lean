@@ -115,5 +115,32 @@ theorem cnot_involutive {n : Nat} (
       distinct
     ]
 
+
+/-- A valid SWAP gate is involutive for every input state. -/
+theorem swap_involutive {n : Nat} (
+    left right : Fin n
+) (
+    distinct : left ≠ right
+) (
+    state : State n
+) :
+    Gate.apply
+        (.swap left right distinct)
+        (Gate.apply (.swap left right distinct) state) =
+      state := by
+  -- SWAP reads amplitudes through a basis permutation, so state equality
+  -- reduces to showing that applying the basis permutation twice is identity.
+  funext basis
+  apply congrArg state
+  funext position
+  -- The two operands need explicit cases; every other bit is untouched.
+  by_cases atLeft : position = left
+  · subst position
+    simp [setBit, distinct]
+  · by_cases atRight : position = right
+    · subst position
+      simp [setBit, distinct]
+    · simp [setBit, atLeft, atRight]
+
 end General
 end QuantumValidation

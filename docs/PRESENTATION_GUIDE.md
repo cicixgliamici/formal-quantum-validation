@@ -18,8 +18,9 @@ kernel-checked Lean and Coq/SQIR proof obligations.
    and result explicit.
 3. Qiskit supplies executable state, probability, resource, and transpilation
    evidence.
-4. A replayable certificate turns the recognized `H; H -> I` rewrite into
-   all-input Lean equality and complete SQIR operator equality.
+4. A replayable certificate turns recognized cancellation of equal adjacent
+   self-inverse gates into all-input Lean equality and complete SQIR operator
+   equality.
 5. Lean checks a native finite semantics, fixed examples, a parametric GHZ
    theorem, and preservation of inner products and normalization.
 6. Coq lowers the shared gate language to SQIR, proves well-formed compilation,
@@ -47,7 +48,7 @@ Qiskit circuit <-> checked IR + exact contract
 | Supported Lean circuits preserve inner products and normalization | General Lean theorems | Applies to the formal gate language |
 | Coq lowering preserves structural validity | Generated well-formedness proofs and `circuit_well_formed_compile_preservation` | Does not verify correspondence with Qiskit |
 | Transpilation preserves the complete operator in tested runs | Qiskit process fidelity and phase-adjusted matrix error | Numerical evidence, not a proof of the transpiler |
-| Adjacent `H; H` elimination preserves semantics | Generated Lean all-input equality and Coq/SQIR operator equality | Exact certificate for one rewrite rule, not arbitrary transpilation |
+| Adjacent equal self-inverse gates cancel | Generated Lean all-input equality and Coq/SQIR operator equality | Exact certificate for one rewrite class, not arbitrary transpilation |
 | Gate conventions agree across boundaries for tested cases | Lean Qiskit-derived and Coq independent-basis regressions | Finite coverage; Coq reaches three qubits for I/X/Z/CNOT and two for H/SWAP |
 | Qiskit DJ reaches Coq end to end | Direct builder-to-extractor-to-generator-to-`coqc` tests | Two fixed DJ variants |
 
@@ -114,6 +115,12 @@ Show the depth reduction from two gates to zero, the self-contained JSON
 certificate, and the generated theorem before compiling it. A deliberately
 rejected mutation then makes the distinction between successful generation and
 kernel acceptance visible.
+
+The shortest negative demonstration is `fqv-demo-phase`. It deliberately
+compares Bell Phi-minus with the Phi-plus contract: all computational-basis
+probabilities pass, while exact state equality fails because of relative phase.
+See the [relative-phase demo guide](PHASE_DEMO.md) for its expected output and
+exit-code semantics.
 
 ## Questions to anticipate
 

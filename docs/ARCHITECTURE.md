@@ -58,9 +58,10 @@ Qiskit result -> candidate IR ----+-> exact rewrite certificate
                                       +-> Coq/SQIR equality -> Coq kernel
 ```
 
-The certificate recognizer currently accepts only adjacent `H; H`
-cancellations. Unsupported Qiskit optimizations fail closed instead of being
-presented as formally certified. The certificate stores both checked IR
+The certificate recognizer accepts adjacent equal pairs of the supported
+self-inverse gates `X`, `Z`, `H`, `CNOT`, and `SWAP`. Unsupported Qiskit
+optimizations fail closed instead of being presented as formally certified.
+The certificate stores both checked IR
 endpoints and every rewrite position. Each formal backend replays the trace
 before emitting an obligation, so a malformed or stale certificate is rejected
 before proof generation.

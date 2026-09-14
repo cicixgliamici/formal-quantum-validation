@@ -71,10 +71,10 @@ is not by itself a proof that the transpiler is semantics-preserving.
 ## Exact rewrite certificate
 
 The optional certificate path connects one deliberately small Qiskit
-optimization to both formal backends. It currently recognizes only removal of
-adjacent Hadamard pairs on the same qubit. The source and candidate cross the
-normal checked-IR boundary, and the resulting self-contained JSON records each
-`cancel_h_h` step with its position and target.
+optimization class to both formal backends. It recognizes removal of adjacent
+equal pairs of `X`, `Z`, `H`, `CNOT`, and `SWAP`. The source and candidate cross
+the normal checked-IR boundary, and certificate schema `0.2` records each
+`cancel_self_inverse` step with its position, gate, targets, and controls.
 
 ```powershell
 fqv-verify `

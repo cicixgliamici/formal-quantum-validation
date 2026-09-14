@@ -158,11 +158,11 @@ fqv-verify `
 mathlib together; using mismatched releases is unsupported. The formal
 development contains no project `sorry`, `axiom`, or `opaque` declaration.
 
-### Exact `H; H` transpilation certificate
+### Exact self-inverse transpilation certificate
 
-The formally certified path currently supports one rewrite: cancellation of
-two adjacent Hadamard gates on the same qubit. Generate the checked endpoints,
-replayable certificate, and Lean obligation with:
+The formally certified path supports one rewrite class: cancellation of two
+adjacent equal `X`, `Z`, `H`, `CNOT`, or `SWAP` gates. Generate the checked
+endpoints, replayable certificate, and Lean obligation with:
 
 ```powershell
 fqv-verify `
@@ -193,7 +193,8 @@ python -m pytest integration_tests/test_transpilation_certificate.py -v
 opam exec -- python -m pytest coq_tests/test_transpilation_certificate.py -v
 ```
 
-These checks certify the recorded `H; H` rewrite, not arbitrary transpilation.
+These checks certify recorded self-inverse cancellations, not arbitrary
+transpilation.
 Generated demonstration artifacts belong in `build/` and are not committed.
 
 ## Running the prototype

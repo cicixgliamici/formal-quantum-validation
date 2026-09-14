@@ -26,6 +26,7 @@ fqv-verify = "fqv.cli:main"
 fqv-bell = "fqv.cli:main"
 fqv-generate = "fqv.generate_cli:main"
 fqv-generate-lean = "fqv.generate_cli:main"
+fqv-demo-phase = "fqv.failure_demo:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

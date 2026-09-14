@@ -130,11 +130,11 @@ Both tactics rewrite `phase_shift PI` with `phase_pi`. SQIR lowers public Z to
 `Rz PI`, whose evaluated matrix is otherwise left in phase-shift form by the
 generic simplifier.
 
-## Certified `H; H` cancellation
+## Certified self-inverse cancellation
 
 The Coq transpilation backend consumes the backend-neutral exact-rewrite
 certificate. Before generating Coq, Python deterministically replays every
-`cancel_h_h` step and requires the reconstructed circuit to match the checked
+`cancel_self_inverse` step and requires the reconstructed circuit to match the checked
 candidate IR. The emitted theorem compares complete SQIR operators:
 
 ```coq
@@ -142,7 +142,8 @@ run duplicate_h_transpilation_source =
   run duplicate_h_transpilation_candidate
 ```
 
-`solve_circuit` proves the equality by reducing the two Hadamard applications.
+`solve_circuit` proves the equality by reducing the duplicated `X`, `Z`, `H`,
+`CNOT`, or `SWAP` applications.
 This result covers every input state because it is an operator equality. It
 certifies the recorded cancellation trace only; it does not verify Qiskit's
 general optimization pipeline or the Python recognizer.
@@ -160,7 +161,7 @@ The Coq CI job provides complementary evidence:
   exercise negative and imaginary amplitude serialization;
 - both DJ Qiskit builders pass directly through extraction and Coq generation
   before `coqc` checks the resulting theorem;
-- the generated adjacent-`H; H` operator equality must compile, while a mutated
+- the generated adjacent self-inverse operator equality must compile, while a mutated
   certificate must be rejected before generation;
 - an invalid repeated-operand CNOT is proved neither source-well-formed nor
   SQIR-well-typed.

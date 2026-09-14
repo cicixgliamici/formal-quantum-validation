@@ -140,7 +140,7 @@ initialization, classical control, and loops.
 This repository does not claim to implement a full Quantum Hoare Logic. Its
 version `0.1` contract and formal backends cover finite pure states, exact
 unitary circuits, and concrete state equalities. The general Lean preservation
-theorems and the all-input `H; H` circuit equivalence go beyond one fixed
+theorems and the all-input self-inverse circuit equivalences go beyond one fixed
 pre/post example, but they still use direct denotational equality rather than a
 quantum-predicate proof calculus. A future contract language based on quantum
 predicates could turn the present pre/post discipline into a genuine QHL-style
@@ -195,7 +195,7 @@ them by hand would break traceability to the source IR and contract.
 
 ## Relationship to transpilation certificates
 
-A state contract specifies one input/output behavior. The adjacent `H; H`
+A state contract specifies one input/output behavior. An adjacent self-inverse
 certificate instead proves that two checked circuits have the same behavior
 for every input. Its JSON artifact therefore stores source IR, candidate IR,
 and rewrite steps rather than extending the contract schema. Both endpoints

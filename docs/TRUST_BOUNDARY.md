@@ -112,8 +112,9 @@ threshold remain trusted. The numerical report alone is not a Lean or Coq
 certificate that Qiskit's transpiler preserves semantics.
 
 The separate exact-rewrite certificate narrows this limitation for
-circuits reduced solely by adjacent `H; H` cancellation. A backend-neutral JSON
-certificate embeds both checked IR endpoints and the rewrite positions. Lean
+circuits reduced solely by adjacent equal self-inverse gate cancellations. A
+backend-neutral JSON certificate embeds both checked IR endpoints, gates,
+operands, and rewrite positions. Lean
 checks equality for every input state; Coq checks equality of complete SQIR
 operators. The recognizer and generators remain untrusted proposers because a
 forged or mistranslated obligation must still be rejected by the proof kernel.

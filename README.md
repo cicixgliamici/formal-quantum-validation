@@ -11,7 +11,8 @@ Currently verified:
 - the full nonempty GHZ(n) family in Lean;
 - unitarity and normalization preservation for every supported circuit in Lean;
 - preservation from well-formed Coq circuits to SQIR `uc_well_typed` programs.
-- exact Lean and Coq/SQIR certificates for adjacent `H; H` cancellation.
+- exact Lean and Coq/SQIR certificates for adjacent equal self-inverse gate
+  cancellation (`X`, `Z`, `H`, `CNOT`, and `SWAP`).
 
 The supported IR contains `I`, `X`, `Z`, `H`, `CNOT`, and `SWAP`.
 
@@ -63,3 +64,9 @@ See [architecture](docs/ARCHITECTURE.md), the
 [show-off command guide](docs/SHOWOFF_GUIDE.md) for a live demo, the
 [presentation guide](docs/PRESENTATION_GUIDE.md) for the main claims, and the
 [Coq/SQIR guide](docs/COQ_SQIR.md) for the second formal backend.
+
+For a short demonstration of why basis measurements are insufficient, run
+`fqv-demo-phase`. It exhibits a relative-phase mutation whose measurement
+probabilities pass while the exact-state contract fails as intended. The
+[phase demo guide](docs/PHASE_DEMO.md) includes the complete expected output
+and explains why the command treats this rejection as success.

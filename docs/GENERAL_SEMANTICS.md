@@ -183,4 +183,5 @@ input state and every register size for which the target exists.
 
 Generated transpilation obligations instantiate this result only after the
 certificate trace has been replayed against its checked source and candidate
-IR. This proves the accepted `H; H` rewrite, not other Qiskit optimizations.
+IR. This proves accepted self-inverse cancellations, not other Qiskit
+optimizations.

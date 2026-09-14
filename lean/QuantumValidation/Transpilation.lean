@@ -1,4 +1,4 @@
-import QuantumValidation.GeneralCircuit
+import QuantumValidation.GeneralProperties
 import Mathlib.Tactic.Ring
 
 /-!

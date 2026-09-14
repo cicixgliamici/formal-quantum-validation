@@ -56,9 +56,10 @@ being mistaken for a correctness claim.
 
 ## Transpilation certificate endpoints
 
-The exact `H; H` rewrite certificate embeds a source IR and candidate IR using
+The exact self-inverse rewrite certificate embeds source and candidate IR using
 these same conventions. Both are validated independently before certificate
-recognition. Each recorded `cancel_h_h` step identifies the position and target
-of one adjacent pair, and deterministic replay must reconstruct the candidate
-exactly. The certificate adds transformation provenance without extending IR
-version `0.1` or weakening its export rules.
+recognition. Each `cancel_self_inverse` step identifies the position, gate,
+targets, and controls of one adjacent equal pair; deterministic replay must
+reconstruct the candidate exactly. Certificate schema `0.2` adds this
+transformation provenance without extending circuit IR version `0.1` or
+weakening its export rules.

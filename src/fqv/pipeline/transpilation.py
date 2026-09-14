@@ -18,7 +18,7 @@ from fqv.domain.reports import EquivalenceReport
 from fqv.domain.transpilation import TranspilationCertificate
 from fqv.frontend.qiskit.extraction import circuit_to_ir
 from fqv.ir.validation import check_ir
-from fqv.pipeline.transpilation_certificate import certify_h_cancellations
+from fqv.pipeline.transpilation_certificate import certify_self_inverse_cancellations
 
 DEFAULT_BASIS_GATES = (
     "id",
@@ -218,5 +218,5 @@ def transpile_check_and_certify(
     # exact IR 0.1 cannot erase a stored global phase or a transpiler layout.
     source_ir = check_ir(circuit_to_ir(circuit))
     candidate_ir = check_ir(circuit_to_ir(transpiled))
-    certificate = certify_h_cancellations(source_ir, candidate_ir)
+    certificate = certify_self_inverse_cancellations(source_ir, candidate_ir)
     return transpiled, report, certificate

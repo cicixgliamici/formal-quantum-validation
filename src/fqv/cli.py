@@ -17,6 +17,7 @@ from pathlib import Path
 from fqv.backend.coq.transpilation import write_transpilation_coq_module
 from fqv.backend.lean.transpilation import write_transpilation_lean_module
 from fqv.domain.contract_parser import load_contract
+from fqv.evidence_manifest import write_verification_manifest
 from fqv.frontend.qiskit.circuits import bell_contract, build_bell_circuit
 from fqv.frontend.qiskit.conversion import checked_ir_to_qiskit
 from fqv.frontend.qiskit.extraction import circuit_to_ir, export_ir
@@ -28,7 +29,7 @@ from fqv.pipeline.transpilation import (
     transpile_and_check,
 )
 from fqv.pipeline.transpilation_certificate import (
-    certify_h_cancellations,
+    certify_self_inverse_cancellations,
     write_transpilation_certificate,
 )
 from fqv.pipeline.verify import verify
@@ -61,6 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional normalized IR output",
     )
     parser.add_argument("--json-report", type=Path, default=None)
+    parser.add_argument(
+        "--verification-manifest",
+        type=Path,
+        default=None,
+        help="optional provenance manifest for the complete run",
+    )
     parser.add_argument("--transpile", action="store_true")
     parser.add_argument(
         "--optimization-level",
@@ -137,6 +144,10 @@ def main() -> int:
         print(f"\nIR written to: {normalized_path}")
 
     equivalence_passed = True
+    equivalence = None
+    certificate = None
+    certificate_path = None
+    proof_path = None
     if args.transpile:
         # This branch compares complete operators, independently of the source
         # contract's one input state. Export then checks exact IR restrictions:
@@ -167,7 +178,7 @@ def main() -> int:
             # provider-neutral recognizer proposes a formal proof trace.
             source_ir = check_ir(circuit_to_ir(circuit))
             candidate_ir = check_ir(circuit_to_ir(transpiled))
-            certificate = certify_h_cancellations(source_ir, candidate_ir)
+            certificate = certify_self_inverse_cancellations(source_ir, candidate_ir)
             if args.transpilation_certificate is not None:
                 certificate_path = write_transpilation_certificate(
                     certificate,
@@ -185,6 +196,22 @@ def main() -> int:
 
     if args.json_report is not None:
         _write_report(args.json_report, report)
+
+    if args.verification_manifest is not None:
+        manifest_path = write_verification_manifest(
+            args.verification_manifest,
+            ir_path=args.ir,
+            contract_path=args.contract,
+            verification=report,
+            equivalence=equivalence,
+            certificate=certificate,
+            certificate_path=certificate_path,
+            proof_path=proof_path,
+            proof_backend=(
+                args.transpilation_proof_backend if proof_path is not None else None
+            ),
+        )
+        print(f"Verification manifest written to: {manifest_path}")
 
     # Generation produces an obligation, while Lean or Coq remains responsible
     # for accepting it in the subsequent toolchain step.
