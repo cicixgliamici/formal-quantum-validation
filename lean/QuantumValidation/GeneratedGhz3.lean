@@ -8,7 +8,6 @@ Regenerate this module instead of editing it by hand.
 namespace QuantumValidation
 namespace General
 
-/-- Einstein-Podolsky-Rosen, look at this :p -/
 /-- Gate order is copied from the validated circuit IR. -/
 def generatedGHZThreeQubitPreparationCircuit : Circuit 3 :=
   [.h 0, .cnot 0 1 (by decide), .cnot 1 2 (by decide)]
