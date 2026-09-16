@@ -19,6 +19,22 @@ Proof map:
 5. `ghzFanout_correct` repeats the step by induction over all target qubits.
 6. `ghz_correct` connects the initial Hadamard and the complete fan-out.
 
+Top-down lemma call chain (start here when reviewing the final theorem):
+
+* `ghz_correct`
+  * `hadamard_zero_starts_ghz` proves the initial Hadamard step;
+  * `ghzFanout_correct` proves the complete fan-out;
+    * `denote_append` separates the previous fan-out from its last gate;
+    * `fanoutGate_advances` proves one fan-out step;
+      * `cnot_apply_superposition` distributes that CNOT over both branches;
+      * `cnot_apply_ket` computes the CNOT action on each basis ket;
+        * `cnotTransform_involutive` justifies the basis reindexing;
+      * `cnotTransform_zero` keeps the all-zero branch fixed;
+      * `cnotTransform_prefix` extends the all-one prefix by one qubit.
+
+Thus the circuit-level reasoning comes first (complete fan-out, then one
+fan-out gate), followed by the CNOT-level facts used to justify that gate.
+
 The longer pointwise proofs below deliberately expose basis assignments. This
 keeps the argument close to the executable semantics in `GeneralCircuit`
 instead of hiding the important bit transformations behind automation.
@@ -62,6 +78,7 @@ private def cnotTransform {n : Nat} (control target : Fin n)
 private def fanoutGate {n : Nat} (index : Nat)
     (positive : 0 < index) (inRange : index < n) : Gate n :=
   .cnot ⟨0, by omega⟩ ⟨index, inRange⟩ (by
+    -- A positive target index cannot denote the control qubit at index zero.
     intro equal
     have := congrArg Fin.val equal
     simp at this
@@ -76,6 +93,8 @@ def ghzFanout {n : Nat} :
     (count : Nat) → count + 1 ≤ n → Circuit n
   | 0, _ => []
   | count + 1, inRange =>
+      -- Gates are stored in execution order: retain the existing fan-out and
+      -- append the CNOT whose new target is `count + 1`.
       ghzFanout count (by omega) ++
         [fanoutGate (count + 1) (by omega) (by omega)]
 
@@ -173,6 +192,9 @@ private theorem cnotTransform_involutive {n : Nat}
     (control target : Fin n) (distinct : control ≠ target) :
     Function.Involutive (cnotTransform control target) := by
   intro basis
+  -- If the control is clear, both transformations are identities. If it is
+  -- set, the target is flipped twice. Distinctness ensures that flipping the
+  -- target cannot change the control between the two transformations.
   by_cases controlBit : basis control <;>
     simp [cnotTransform, controlBit, flipBit, setBit, distinct]
 
@@ -240,6 +262,9 @@ private theorem cnot_apply_superposition {n : Nat}
         (addState
           (Gate.apply (.cnot control target distinct) left)
           (Gate.apply (.cnot control target distinct) right)) := by
+  -- Linearity is proved directly from the executable semantics. For either
+  -- control-bit value, CNOT reads both input amplitudes at the same basis
+  -- assignment, so scaling and addition factor out pointwise.
   funext basis
   by_cases controlBit : basis control <;>
     simp [Gate.apply, scaleState, addState, controlBit]
@@ -248,6 +273,8 @@ private theorem cnot_apply_superposition {n : Nat}
 private theorem cnotTransform_zero {n : Nat}
     (control target : Fin n) :
     cnotTransform control target (prefixBasis 0) = prefixBasis 0 := by
+  -- Equality of basis assignments is pointwise. The zero prefix makes every
+  -- control bit false, hence the transformation selects its identity branch.
   funext qubit
   simp [cnotTransform, prefixBasis]
 
@@ -290,6 +317,8 @@ private theorem fanoutGate_advances {n count : Nat}
 private theorem denote_append {n : Nat} (first second : Circuit n)
     (state : State n) :
     denote (first ++ second) state = denote second (denote first state) := by
+  -- `denote` is a left fold, matching the execution order of the gate list.
+  -- The standard fold-append law therefore exposes sequential composition.
   simp [denote, List.foldl_append]
 
 /-- The first `count` fan-out gates establish a prefix of `count + 1` ones. -/
@@ -301,11 +330,19 @@ private theorem ghzFanout_correct {n : Nat}
   -- hypothesis handles the earlier targets; `fanoutGate_advances` handles
   -- the single gate appended for the successor case.
   induction count with
-  | zero => rfl
+  | zero =>
+      -- No fan-out gate is required: the starting invariant is already
+      -- `ghzPrefix (0 + 1)`.
+      rfl
   | succ previous inductionHypothesis =>
+      -- Unfold the successor circuit into the previous fan-out followed by
+      -- exactly one newly appended CNOT.
       rw [ghzFanout, denote_append]
+      -- Apply the induction hypothesis to obtain the prefix before that CNOT.
       rw [inductionHypothesis (by omega)]
+      -- Evaluating the singleton circuit leaves one direct gate application.
       simp only [denote, List.foldl_cons, List.foldl_nil]
+      -- The local fan-out lemma extends the entangled prefix by one qubit.
       exact fanoutGate_advances (by omega) (by omega)
 
 /--
@@ -327,6 +364,8 @@ theorem ghz_correct (n : Nat) (nonempty : 0 < n) :
   -- and fan-out grows it until every qubit belongs to the true branch.
   rw [hadamard_zero_starts_ghz]
   rw [ghzFanout_correct]
+  -- Nonemptiness lets arithmetic normalize the final prefix length to the
+  -- full register size, making `ghzPrefix n` definitionally `ghzState n`.
   have fullRegister : n - 1 + 1 = n := by omega
   rw [fullRegister]
   rfl
@@ -335,6 +374,8 @@ theorem ghz_correct (n : Nat) (nonempty : 0 < n) :
 theorem ghz_three_correct :
     denote (ghzCircuit 3 (by decide)) (ket (prefixBasis 0)) =
       ghzState 3 :=
+  -- This corollary performs no new quantum reasoning: it specializes the
+  -- parametric proof and lets `decide` discharge the nonempty-register fact.
   ghz_correct 3 (by decide)
 
 end General

@@ -8,6 +8,15 @@ This file proves reusable properties of the gates defined in
 
 The results hold for every register size and every input state.
 They can be used to simplify circuits and prove circuit equivalences.
+
+Proof strategy used throughout this file:
+
+1. Extensionality turns equality of states into equality of amplitudes.
+2. A case split exposes the classical bit inspected by the gate.
+3. Simplification unfolds the gate semantics and discharges each bit case.
+
+Keeping these three steps visible makes the proofs easy to compare with the
+definitions in `GeneralCircuit` and avoids relying on opaque automation.
 -/
 
 namespace QuantumValidation
@@ -24,6 +33,8 @@ theorem identity_apply {n : Nat} (
     state : State n
 ) :
     Gate.apply (.identity target) state = state := by
+  -- `Gate.apply` defines identity by returning the input state unchanged, so
+  -- both sides are definitionally equal and no extensionality is necessary.
   rfl
 
 
@@ -71,7 +82,9 @@ theorem z_involutive {n : Nat} (
   -- Compare the amplitudes of an arbitrary basis state.
   funext basis
 
-  -- Split according to the value of the target qubit.
+  -- Split according to the value of the target qubit. In the `false` branch
+  -- both Z gates contribute phase `1`; in the `true` branch they contribute
+  -- two factors of `-1`, whose product is again `1`.
   by_cases bit : basis target <;>
     simp [
       Gate.apply,
@@ -103,7 +116,8 @@ theorem cnot_involutive {n : Nat} (
   -- Prove equality by comparing amplitudes pointwise.
   funext basis
 
-  -- Split according to the value of the control qubit.
+  -- Split according to the value of the control qubit. This is exactly the
+  -- branch used by the semantic definition of CNOT.
   by_cases bit : basis control <;>
 
     -- CNOT either does nothing twice or flips the target twice.
@@ -116,7 +130,13 @@ theorem cnot_involutive {n : Nat} (
     ]
 
 
-/-- A valid SWAP gate is involutive for every input state. -/
+/--
+A valid SWAP gate is involutive for every input state.
+
+The semantic action of SWAP permutes basis assignments before reading their
+amplitudes. Therefore it is enough to prove that this basis permutation sends
+every position back to its original value after two applications.
+-/
 theorem swap_involutive {n : Nat} (
     left right : Fin n
 ) (
@@ -136,11 +156,14 @@ theorem swap_involutive {n : Nat} (
   -- The two operands need explicit cases; every other bit is untouched.
   by_cases atLeft : position = left
   · subst position
+    -- The bit moved from `right` to `left` is moved back to `left`.
     simp [setBit, distinct]
   · by_cases atRight : position = right
     · subst position
+      -- Symmetrically, the bit moved from `left` returns to `right`.
       simp [setBit, distinct]
-    · simp [setBit, atLeft, atRight]
+    · -- Positions different from both operands are unchanged by either SWAP.
+      simp [setBit, atLeft, atRight]
 
 end General
 end QuantumValidation
