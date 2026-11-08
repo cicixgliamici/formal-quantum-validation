@@ -7,10 +7,16 @@ on:
 permissions:
   contents: read
 
+# New commits supersede older checks for the same event and branch or PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   coq:
     name: Coq checks
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Read the shared toolchain pins
@@ -26,14 +32,33 @@ jobs:
       - name: Install Python test dependencies
         run: python -m pip install -c constraints-python312.txt -e ".[dev]"
       - name: Check committed Coq source for drift
-        run: python -m pytest tests/test_coq_drift.py -v
+        run: python -m pytest tests/test_coq_drift.py -v --junitxml=build/test-results/coq-drift.xml
       # The fixture builds Circuit.v before compiling its generated clients.
       - name: Check Coq examples, gate semantics, and mutated DJ targets
-        run: opam exec -- python -m pytest coq_tests -v
+        run: opam exec -- python -m pytest coq_tests -v --junitxml=build/test-results/coq.xml
+
+      # Report even when a preceding test or build fails; missing reports stay visible.
+      - name: Summarize test evidence
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: python scripts/summarize_tests.py
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coq-test-results
+          path: build/test-results/*.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   python:
     name: Python checks
+    timeout-minutes: 15
     strategy:
+      # Preserve evidence from both operating systems if either fails.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -58,10 +83,10 @@ jobs:
         run: python -m pip install -c constraints-python312.txt -e ".[dev]"
 
       - name: Check Python style and imports
-        run: python -m ruff check src tests coq_tests integration_tests
+        run: python -m ruff check src tests coq_tests integration_tests scripts
 
       - name: Run executable checks
-        run: python -m pytest
+        run: python -m pytest --junitxml=build/test-results/python.xml
 
       - name: Check installed dependency compatibility
         run: python -m pip check
@@ -107,17 +132,30 @@ jobs:
           diff -u lean/QuantumValidation/GeneratedDj2Constant.lean "${{ runner.temp }}/GeneratedDj2Constant.lean"
           diff -u lean/QuantumValidation/GeneratedDj2Balanced.lean "${{ runner.temp }}/GeneratedDj2Balanced.lean"
 
+      # Report even when a preceding test or build fails; missing reports stay visible.
+      - name: Summarize test evidence
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: python scripts/summarize_tests.py
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-test-results-${{ matrix.os }}
+          path: build/test-results/*.xml
+          if-no-files-found: warn
+          retention-days: 14
+
   lean:
     name: Lean checks
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
-
-      # The action reads lean-toolchain and caches matching Lake dependencies.
-      - name: Build the formal development
-        uses: leanprover/lean-action@v1
 
       - name: Install Python for cross-system semantic checks
         uses: actions/setup-python@v5
@@ -131,6 +169,30 @@ jobs:
       - name: Install the semantic test dependencies
         run: python -m pip install -c constraints-python312.txt -e ".[dev]"
 
+      # Reject source placeholders before spending time compiling formal modules.
+      - name: Check the Lean source policy
+        run: python scripts/check_formal_sources.py
+
+      # The action reads lean-toolchain and caches matching Lake dependencies.
+      - name: Build the formal development
+        uses: leanprover/lean-action@v1
+
       # These tests invoke Lean on Qiskit-derived targets, not just generated text.
       - name: Compare every supported gate with Qiskit on basis inputs
-        run: python -m pytest integration_tests -v
+        run: python -m pytest integration_tests -v --junitxml=build/test-results/lean-integration.xml
+
+      # Report even when a preceding test or build fails; missing reports stay visible.
+      - name: Summarize test evidence
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: python scripts/summarize_tests.py
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-test-results
+          path: build/test-results/*.xml
+          if-no-files-found: warn
+          retention-days: 14

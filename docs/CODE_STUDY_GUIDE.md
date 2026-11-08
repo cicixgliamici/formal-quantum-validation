@@ -107,7 +107,8 @@ independent from Qiskit even though the current executable frontend uses it.
 Study exercise:
 
 1. Explain why equal measurement probabilities do not imply equal states.
-2. Find where global phase is accepted.
+2. Find why target-state acceptance includes global phase, even though fidelity
+   alone cannot distinguish it. Contrast this with the operator comparison in step 6.
 3. Explain why exact and sampled tolerances differ.
 
 ## 6. Understand transformation evidence and certification

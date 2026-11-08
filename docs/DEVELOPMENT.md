@@ -25,7 +25,7 @@ py -3.12 -m venv .venv
 python -m pip install -c constraints-python312.txt -e ".[dev]"
 python -m pip check
 python -m pytest
-python -m ruff check src tests coq_tests integration_tests
+python -m ruff check src tests coq_tests integration_tests scripts
 ```
 
 On a POSIX shell:
@@ -37,7 +37,7 @@ python -m pip install --upgrade pip
 python -m pip install -c constraints-python312.txt -e ".[dev]"
 python -m pip check
 python -m pytest
-python -m ruff check src tests coq_tests integration_tests
+python -m ruff check src tests coq_tests integration_tests scripts
 ```
 
 The direct Python dependencies are pinned in `pyproject.toml`; the tested
@@ -56,6 +56,40 @@ repository; custom `--ir` and `--contract` paths remain relative to the caller.
 Ruff checks correctness errors, import ordering, and core Python style in CI.
 `tests/test_documentation.py` verifies every local Markdown link without making
 documentation tests depend on external network availability.
+
+## CI evidence and formal source policy
+
+The [CI workflow](../.github/workflows/ci.yml) runs Python checks on Linux and
+Windows and separate Lean and Coq jobs. Each job writes pytest JUnit XML under
+`build/test-results/`, publishes counts in the GitHub job summary, and uploads
+the XML as an artifact retained for 14 days. Failed tests still produce reports;
+if setup or formal compilation fails first, the summary states that no report
+was produced. Check the whole job status as well as the test counts.
+
+Jobs have explicit time budgets (Python 15 minutes, Lean 30, Coq 60). A newer
+run cancels an older run for the same event and branch or pull request. The
+Python matrix keeps both operating systems running if either fails.
+
+Run the fast Lean source policy check without installing Lean:
+
+```text
+python scripts/check_formal_sources.py
+```
+
+It checks project-owned `lean/**/*.lean` for `sorry`, `admit`, `sorryAx`, `axiom`,
+and `opaque` tokens outside comments and strings, including nested block
+comments. The Python suite tests this guard with deliberate mutations and
+checks the current sources; the Lean job also runs it before compilation.
+This is a syntactic policy, not a complete Lean parser or an audit of imported
+axioms, macros, or generated metaprograms. Kernel checking and the
+[trust boundary](TRUST_BOUNDARY.md) remain separate concerns.
+
+To preview the summary locally after a test run:
+
+```text
+python -m pytest --junitxml=build/test-results/python.xml
+python scripts/summarize_tests.py
+```
 
 ## Coq environment
 

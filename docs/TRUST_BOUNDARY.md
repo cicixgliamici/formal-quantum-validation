@@ -16,6 +16,11 @@ in the pipeline.
   normalization.
 - Project declarations contain no `sorry`, project axiom, or opaque shortcut.
 
+The [source policy checker](../scripts/check_formal_sources.py) rejects prohibited
+Lean tokens outside comments and strings in project sources. CI runs this guard
+alongside formal compilation. It is a syntactic regression check, not a proof
+that imported libraries or metaprograms introduce no assumptions.
+
 ## Trusted components
 
 - Lean's kernel and the definitions imported from mathlib

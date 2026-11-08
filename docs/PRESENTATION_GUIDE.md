@@ -41,6 +41,9 @@ Qiskit circuit <-> checked IR + exact contract
 
 ## Claims and evidence
 
+For source links and the checks behind each claim, use the
+[reviewer evidence map](REVIEWER_GUIDE.md#claims-and-evidence).
+
 | Claim | Evidence | Important limitation |
 | --- | --- | --- |
 | Fixed Bell, GHZ(3), and DJ circuits reach exact targets | Generated Lean and Coq theorems | Fixed circuits, not all algorithms of each family |
